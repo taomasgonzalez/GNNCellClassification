@@ -3,3 +3,4 @@ out
 dataset/*
 !dataset/getdata.sh
 .ipynb_checkpoints
+src/__pycache__
