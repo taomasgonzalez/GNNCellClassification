@@ -1,4 +1,3 @@
-import argparse
 import os
 import scanpy as sc
 import pandas as pd
@@ -36,35 +35,3 @@ def load_histology(ann_data, img_dir):
         else:
             histology_imgs[patient_id] = img
     return histology_imgs
-
-
-def main(data_dir, img_dir):
-    files = [file for file in os.listdir(data_dir) if file.endswith(".h5ad")]
-    filepaths = [os.path.join(data_dir, file) for file in files]
-    # ann_data[k] is the per patient AnnData
-    ann_data = load_ann_data(filenames=files, filepaths=filepaths)
-    # histology_images[k] per patient is the TIFF array
-    histology_imgs = load_histology(ann_data=ann_data, img_dir=img_dir)
-    # ann_data.X, ann_data.obsm["spatial"], histology_images[s]
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description=""
-    )
-    parser.add_argument(
-        "--data_dir", "-d",
-        type=str,
-        default="dataset/data",
-        help="Path to the directory containing .h5ad files"
-    )
-
-    parser.add_argument(
-        "--img_dir", "-i",
-        type=str,
-        default="dataset/images",
-        help="Path to the directory containing images files"
-    )
-
-    args = parser.parse_args()
-    main(args.data_dir, args.img_dir)

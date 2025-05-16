@@ -1,4 +1,5 @@
 venv
+out
 dataset/*
 !dataset/getdata.sh
 .ipynb_checkpoints
