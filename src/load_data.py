@@ -14,7 +14,6 @@ def load_ann_data(filenames, filepaths):
         patient_id = os.path.splitext(filename)[0]
         print(f"Loading AnnData for sample {patient_id} …")
         ad = sc.read_h5ad(filepath)
-        ad.obs["sample_id"] = patient_id
         ann_data[patient_id] = ad
 
     return ann_data

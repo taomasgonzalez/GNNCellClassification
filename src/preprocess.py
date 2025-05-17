@@ -5,27 +5,7 @@ from gene_filtering import prefilter_genes, prefilter_specialgenes
 import os
 
 
-def main(data_dir, img_dir, graph_dir):
-    files = [file for file in os.listdir(data_dir) if file.endswith(".h5ad")]
-    filepaths = [os.path.join(data_dir, file) for file in files]
-    # ann_data[k] is the per patient AnnData
-    ann_data = load_ann_data(filenames=files, filepaths=filepaths)
-    # histology_images[k] per patient is the TIFF array
-    histology_imgs = load_histology(ann_data=ann_data, img_dir=img_dir)
-    print("obs: ", ann_data['151674'].obs)
-    print("var: ", ann_data['151674'].var)
-    print("uns: ", ann_data['151674'].uns)
-    print("obsm: ", ann_data['151674'].obsm['spatial'])
-    print("obsp: ", ann_data['151674'].obsp)
-    print("X: ", ann_data['151674'].X)
-
-    create_graphs(graph_dir=graph_dir, ann_data=ann_data, histology_imgs=histology_imgs)
-    # ann_data.X, ann_data.obsm["spatial"], histology_images[s]
-    prefilter_genes(ann_data, min_cells=3)
-    prefilter_specialgenes(ann_data)
-
-
-if __name__ == "__main__":
+def get_parser():
     parser = argparse.ArgumentParser(
         description=""
     )
@@ -49,6 +29,28 @@ if __name__ == "__main__":
         default="../out/graphs",
         help="Path to the directory where generated graphs will be output to"
     )
+
+    return parser
+
+
+def main(data_dir, img_dir, graph_dir):
+    files = [file for file in os.listdir(data_dir) if file.endswith(".h5ad")]
+    filepaths = [os.path.join(data_dir, file) for file in files]
+
+    # ann_data[k] is the per patient AnnData
+    ann_data = load_ann_data(filenames=files, filepaths=filepaths)
+    # histology_images[k] per patient is the TIFF array
+    histology_imgs = load_histology(ann_data=ann_data, img_dir=img_dir)
+
+    # create_graphs(graph_dir=graph_dir, ann_data=ann_data, histology_imgs=histology_imgs)
+    # # ann_data.X, ann_data.obsm["spatial"], histology_images[s]
+    # prefilter_genes(ann_data, min_cells=3)
+    # prefilter_specialgenes(ann_data)
+    return ann_data, histology_imgs
+
+
+if __name__ == "__main__":
+    parser = get_parser()
 
     args = parser.parse_args()
     main(args.data_dir, args.img_dir, args.graph_dir)
