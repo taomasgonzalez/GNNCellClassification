@@ -42,7 +42,7 @@ def main(data_dir, img_dir, graph_dir):
     # histology_images[k] per patient is the TIFF array
     histology_imgs = load_histology(ann_data=ann_data, img_dir=img_dir)
 
-    # create_graphs(graph_dir=graph_dir, ann_data=ann_data, histology_imgs=histology_imgs)
+    create_graphs(graph_dir=graph_dir, ann_data=ann_data, histology_imgs=histology_imgs)
     # # ann_data.X, ann_data.obsm["spatial"], histology_images[s]
     # prefilter_genes(ann_data, min_cells=3)
     # prefilter_specialgenes(ann_data)

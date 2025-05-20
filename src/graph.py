@@ -6,155 +6,111 @@ import pandas as pd
 import numpy as np
 import scanpy as sc
 import math
-import numba
 
 
 def create_graphs(graph_dir, ann_data, histology_imgs):
-    s = 1
-    b = 49
+    offsets = {'151676': 310, '151669': 276, '151507': 236, '151508': 232, '151672': 264, \
+        '151670': 339, '151673': 260, '151675': 228, '151510': 204, '151671': 238, \
+        '151674': 234, '151509': 220}
+    thickness = 48
 
     for patient_id, data in ann_data.items():
         print(f"Creating Graphs for sample {patient_id} …")
 
-        spatial = data.obsm['spatial']
-        x_array = data.obs["array_col"].astype(int).tolist()
-        y_array = data.obs["array_row"].astype(int).tolist()
-        x_pixel = spatial[:, 0].astype(int).tolist()
-        y_pixel = spatial[:, 1].astype(int).tolist()
+        offset = offsets[patient_id]
+        hires_scale = ann_data[patient_id].uns['spatial'][patient_id]['scalefactors']['tissue_hires_scalef']
+        spot_pixels = ann_data[patient_id].obsm['spatial'] * hires_scale
+        spot_pixels = spot_pixels.astype(int)
+        image = ann_data[patient_id].uns['spatial'][patient_id]['images']['hires']
+        hires_shape = image.shape
+        assert min(hires_shape[0], hires_shape[1]) > spot_pixels.max()
 
-        new_img = histology_imgs[patient_id].copy()
-        for i in range(len(x_pixel)):
-            x = x_pixel[i]
-            y = y_pixel[i]
-            new_img[int(x-20):int(x+20), int(y-20):int(y+20),:]=0
+        new_image = np.flip(image, 0)
+        x_pixels = spot_pixels[:, 0]
+        y_pixels = spot_pixels[:, 1]
+
+        for xi, yi in zip(x_pixels, y_pixels):
+            x0 = max(0, xi - thickness)
+            x1 = min(image.shape[1], xi + thickness)
+            y0 = max(0, yi - thickness) + offsets[patient_id]
+            y1 = min(image.shape[0], yi + thickness) + offsets[patient_id]
+            new_image[y0:y1, x0:x1, :] = [0, 0, 0]
+
 
         graph_img_path = os.path.join(graph_dir, f'{patient_id}_graph.jpg')
-        if not cv2.imwrite(graph_img_path, new_img):
+        if not cv2.imwrite(graph_img_path, np.flip(new_image, 0)):
             raise FileNotFoundError(f"Could not write graph at {graph_img_path}")
 
-        graph_path = os.path.join(graph_dir, f'{patient_id}_adj.csv')
-        adj = calculate_adj_matrix(x=x_pixel,y=y_pixel, x_pixel=x_pixel, y_pixel=y_pixel, image=new_img, beta=b, \
-                                   alpha=s, histology=True)
-        np.savetxt(graph_path, adj, delimiter=',')
+        graph_path = os.path.join(graph_dir, f'{patient_id}_adj')
+        adj = calculate_adj_matrix(x_pixels=x_pixels,y_pixels=y_pixels, image=new_image, thickness=thickness,  \
+                                   alpha=1, histology=True, offset=offsets[patient_id])
+
+        # verify that it's a square matrix
+        assert adj.ndim == 2 and adj.shape[0] == adj.shape[1]
+        # distances should be >= 0
+        assert np.all(adj >= 0.0)
+        # there should be no funny numbers (infinity, etc)
+        assert np.isfinite(adj).all()
+        # should be a symmetric matrix
+        assert np.allclose(adj, adj.T, atol=1e-8)
+        # diagonals should be 0 (or close to)
+        assert np.allclose(np.diag(adj), 0.0, atol=1e-4)
+
+        # force diagonals to zero.
+        np.fill_diagonal(adj, 0.0)
+        print("Max value: ", np.max(adj))
+        np.save(graph_path, adj)
 
 
-@numba.njit("f4(f4[:], f4[:])")
-def euclid_dist(t1,t2):
-    sum=0
-    for i in range(t1.shape[0]):
-        sum+=(t1[i]-t2[i])**2
-    return np.sqrt(sum)
+def pairwise_distance(x):
+    # Squared norms of each row
+    sq_norms = np.sum(x*x, axis=1)
 
-@numba.njit("f4[:,:](f4[:,:])", parallel=True, nogil=True)
-def pairwise_distance(X):
-    n=X.shape[0]
-    adj=np.empty((n, n), dtype=np.float32)
-    for i in numba.prange(n):
-        for j in numba.prange(n):
-            adj[i][j]=euclid_dist(X[i], X[j])
-    return adj
+    # ||xi - xj||**2 = ||xi||**2 + ||xj||**2 - 2 * xi·xj
+    sq_norms = sq_norms[:, None] + sq_norms[None, :] - 2.0 * x.dot(x.T)
+    # Numerical safety: clip any small negatives to zero
+    np.maximum(sq_norms, 0, out=sq_norms)
+    return np.sqrt(sq_norms)
 
-def extract_color(x_pixel=None, y_pixel=None, image=None, beta=49):
-	#beta to control the range of neighbourhood when calculate grey vale for one spot
-	beta_half=round(beta/2)
-	g=[]
-	for i in range(len(x_pixel)):
-		max_x=image.shape[0]
-		max_y=image.shape[1]
-		nbs=image[max(0,x_pixel[i]-beta_half):min(max_x,x_pixel[i]+beta_half+1),max(0,y_pixel[i]-beta_half):min(max_y,y_pixel[i]+beta_half+1)]
-		g.append(np.mean(np.mean(nbs,axis=0),axis=0))
-	c0, c1, c2=[], [], []
-	for i in g:
-		c0.append(i[0])
-		c1.append(i[1])
-		c2.append(i[2])
-	c0=np.array(c0)
-	c1=np.array(c1)
-	c2=np.array(c2)
-	c3=(c0*np.var(c0)+c1*np.var(c1)+c2*np.var(c2))/(np.var(c0)+np.var(c1)+np.var(c2))
-	return c3
 
-def calculate_adj_matrix(x, y, x_pixel=None, y_pixel=None, image=None, beta=49, alpha=1, histology=True):
-	#x,y,x_pixel, y_pixel are lists
-	if histology:
-		assert (x_pixel is not None) & (x_pixel is not None) & (image is not None)
-		assert (len(x)==len(x_pixel)) & (len(y)==len(y_pixel))
-		print("Calculating adj matrix using histology image...")
-		#beta to control the range of neighbourhood when calculate grey vale for one spot
-		#alpha to control the color scale
-		beta_half=round(beta/2)
-		g=[]
-		for i in range(len(x_pixel)):
-			max_x=image.shape[0]
-			max_y=image.shape[1]
-			nbs=image[max(0,x_pixel[i]-beta_half):min(max_x,x_pixel[i]+beta_half+1),max(0,y_pixel[i]-beta_half):min(max_y,y_pixel[i]+beta_half+1)]
-			g.append(np.mean(np.mean(nbs,axis=0),axis=0))
-		c0, c1, c2=[], [], []
-		for i in g:
-			c0.append(i[0])
-			c1.append(i[1])
-			c2.append(i[2])
-		c0=np.array(c0)
-		c1=np.array(c1)
-		c2=np.array(c2)
-		print("Var of c0,c1,c2 = ", np.var(c0),np.var(c1),np.var(c2))
-		c3=(c0*np.var(c0)+c1*np.var(c1)+c2*np.var(c2))/(np.var(c0)+np.var(c1)+np.var(c2))
-		c4=(c3-np.mean(c3))/np.std(c3)
-		z_scale=np.max([np.std(x), np.std(y)])*alpha
-		z=c4*z_scale
-		z=z.tolist()
-		print("Var of x,y,z = ", np.var(x),np.var(y),np.var(z))
-		X=np.array([x, y, z]).T.astype(np.float32)
-	else:
-		print("Calculating adj matrix using xy only...")
-		X=np.array([x, y]).T.astype(np.float32)
-	return pairwise_distance(X)
+def calculate_adj_matrix(x_pixels, y_pixels, offset, image, thickness=49, alpha=1, histology=True):
+    if histology:
+        print("Calculating adj matrix using histology image...")
+        # thickness to control the range of the region surrounding each spot.
+        # alpha to control the color scale relative to the distances
+        thickness_half = thickness // 2
 
-"""
-def calculate_adj_matrix(x, y, x_pixel=None, y_pixel=None, image=None, beta=49, alpha=1, histology=True):
-	#x,y,x_pixel, y_pixel are lists
-	adj=np.zeros((len(x),len(x)))
-	if histology:
-		assert (x_pixel is not None) & (x_pixel is not None) & (image is not None)
-		assert (len(x)==len(x_pixel)) & (len(y)==len(y_pixel))
-		print("Calculating adj matrix using histology image...")
-		#beta to control the range of neighbourhood when calculate grey vale for one spot
-		#alpha to control the color scale
-		beta_half=round(beta/2)
-		g=[]
-		for i in range(len(x_pixel)):
-			max_x=image.shape[0]
-			max_y=image.shape[1]
-			nbs=image[max(0,x_pixel[i]-beta_half):min(max_x,x_pixel[i]+beta_half+1),max(0,y_pixel[i]-beta_half):min(max_y,y_pixel[i]+beta_half+1)]
-			g.append(np.mean(np.mean(nbs,axis=0),axis=0))
-		c0, c1, c2=[], [], []
-		for i in g:
-			c0.append(i[0])
-			c1.append(i[1])
-			c2.append(i[2])
-		c0=np.array(c0)
-		c1=np.array(c1)
-		c2=np.array(c2)
-		print("Var of c0,c1,c2 = ", np.var(c0),np.var(c1),np.var(c2))
-		c3=(c0*np.var(c0)+c1*np.var(c1)+c2*np.var(c2))/(np.var(c0)+np.var(c1)+np.var(c2))
-		c4=(c3-np.mean(c3))/np.std(c3)
-		z_scale=np.max([np.std(x), np.std(y)])*alpha
-		z=c4*z_scale
-		z=z.tolist()
-		print("Var of x,y,z = ", np.var(x),np.var(y),np.var(z))
-		for i in range(len(x)):
-			if i%50==0:
-				print("Calculating spot ", i)
-			for j in range(len(x)):
-				x1,y1,z1,x2,y2,z2=x[i],y[i],z[i],x[j],y[j],z[j]
-				adj[i][j]=distance((x1,y1,z1),(x2,y2,z2))
-	else:
-		print("Calculating adj matrix using xy only...")
-		for i in range(len(x)):
-			if i%50==0:
-				print("Calculating spot", i)
-			for j in range(len(x)):
-				x1,y1,x2,y2=x[i],y[i],x[j],y[j]
-				adj[i][j]=distance((x1,y1),(x2,y2))
-	return adj
-"""
+        # Obtain the average color of the region surrounding each spot.
+        # color_avgs[i] will have the average per-channel color (color0, color1, color2) of the region.
+        color_avgs = []
+        for x_pixel, y_pixel in zip(x_pixels, y_pixels):
+            # define region limits
+            x0 = max(0, x_pixel - thickness_half)
+            x1 = min(image.shape[1], x_pixel + thickness_half)
+            y0 = max(0, y_pixel - thickness_half) + offset
+            y1 = min(image.shape[0], y_pixel + thickness_half) + offset
+
+            avg_colors = np.mean(image[x0:x1, y0:y1], axis=(0, 1))
+            color_avgs.append(avg_colors)
+
+        color_avgs = np.array(color_avgs)
+
+        # Obtain variance of each color channel
+        color_avgs_vars = np.var(color_avgs, axis=0)
+
+        print("Variances of color0, color1, color2 = ", color_avgs_vars)
+
+        normalized_color_avgs = np.sum(color_avgs * color_avgs_vars, axis=1) / np.sum(color_avgs_vars)
+        normalized_color_avgs -= np.mean(normalized_color_avgs)
+        normalized_color_avgs /= np.std(normalized_color_avgs)
+
+        z_scale = np.max([np.std(x_pixels), np.std(y_pixels)]) * alpha
+        z = normalized_color_avgs * z_scale
+
+        print("Var of x, y, z = ", np.var(x_pixels), np.var(y_pixels), np.var(z))
+        X = np.array([x_pixels, y_pixels, z]).T.astype(np.float64)
+    else:
+        print("Calculating adj matrix using xy only...")
+        X = np.array([x_pixels, y_pixels]).T.astype(np.float64)
+
+    return pairwise_distance(X)
