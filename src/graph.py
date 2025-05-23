@@ -25,7 +25,8 @@ def create_graphs(graph_dir, ann_data, histology_imgs):
         hires_shape = image.shape
         assert min(hires_shape[0], hires_shape[1]) > spot_pixels.max()
 
-        new_image = np.flip(image, 0)
+        flipped_image = np.flip(image, 0)
+        image_cpy = flipped_image.copy()
         x_pixels = spot_pixels[:, 0]
         y_pixels = spot_pixels[:, 1]
 
@@ -34,15 +35,15 @@ def create_graphs(graph_dir, ann_data, histology_imgs):
             x1 = min(image.shape[1], xi + thickness)
             y0 = max(0, yi - thickness) + offsets[patient_id]
             y1 = min(image.shape[0], yi + thickness) + offsets[patient_id]
-            new_image[y0:y1, x0:x1, :] = [0, 0, 0]
+            image_cpy[y0:y1, x0:x1, :] = [0, 0, 0]
 
 
         graph_img_path = os.path.join(graph_dir, f'{patient_id}_graph.jpg')
-        if not cv2.imwrite(graph_img_path, np.flip(new_image, 0)):
+        if not cv2.imwrite(graph_img_path, np.flip(image_cpy, 0)):
             raise FileNotFoundError(f"Could not write graph at {graph_img_path}")
 
         graph_path = os.path.join(graph_dir, f'{patient_id}_adj')
-        adj = calculate_adj_matrix(x_pixels=x_pixels,y_pixels=y_pixels, image=new_image, thickness=thickness,  \
+        adj = calculate_adj_matrix(x_pixels=x_pixels,y_pixels=y_pixels, image=flipped_image, thickness=thickness,  \
                                    alpha=1, histology=True, offset=offsets[patient_id])
 
         # verify that it's a square matrix
@@ -73,36 +74,42 @@ def pairwise_distance(x):
     return np.sqrt(sq_norms)
 
 
+def get_region_colors(x_pixels, y_pixels, offset, image, thickness=49, alpha=1):
+    # thickness to control the range of the region surrounding each spot.
+    # alpha to control the color scale relative to the distances
+    thickness_half = thickness // 2
+
+    # Obtain the average color of the region surrounding each spot.
+    # color_avgs[i] will have the average per-channel color (color0, color1, color2) of the region.
+    color_avgs = []
+    for x_pixel, y_pixel in zip(x_pixels, y_pixels):
+        # define region limits
+        x0 = max(0, x_pixel - thickness_half)
+        x1 = min(image.shape[1], x_pixel + thickness_half)
+        y0 = max(0, y_pixel - thickness_half) + offset
+        y1 = min(image.shape[0], y_pixel + thickness_half) + offset
+
+        avg_colors = np.mean(image[x0:x1, y0:y1], axis=(0, 1))
+        color_avgs.append(avg_colors)
+
+    color_avgs = np.array(color_avgs)
+
+    # Obtain variance of each color channel
+    color_avgs_vars = np.var(color_avgs, axis=0)
+
+    print("Variances of color0, color1, color2 = ", color_avgs_vars)
+
+    normalized_color_avgs = np.sum(color_avgs * color_avgs_vars, axis=1) / np.sum(color_avgs_vars)
+    normalized_color_avgs -= np.mean(normalized_color_avgs)
+    normalized_color_avgs /= np.std(normalized_color_avgs)
+    return normalized_color_avgs
+
+
 def calculate_adj_matrix(x_pixels, y_pixels, offset, image, thickness=49, alpha=1, histology=True):
     if histology:
         print("Calculating adj matrix using histology image...")
-        # thickness to control the range of the region surrounding each spot.
-        # alpha to control the color scale relative to the distances
-        thickness_half = thickness // 2
 
-        # Obtain the average color of the region surrounding each spot.
-        # color_avgs[i] will have the average per-channel color (color0, color1, color2) of the region.
-        color_avgs = []
-        for x_pixel, y_pixel in zip(x_pixels, y_pixels):
-            # define region limits
-            x0 = max(0, x_pixel - thickness_half)
-            x1 = min(image.shape[1], x_pixel + thickness_half)
-            y0 = max(0, y_pixel - thickness_half) + offset
-            y1 = min(image.shape[0], y_pixel + thickness_half) + offset
-
-            avg_colors = np.mean(image[x0:x1, y0:y1], axis=(0, 1))
-            color_avgs.append(avg_colors)
-
-        color_avgs = np.array(color_avgs)
-
-        # Obtain variance of each color channel
-        color_avgs_vars = np.var(color_avgs, axis=0)
-
-        print("Variances of color0, color1, color2 = ", color_avgs_vars)
-
-        normalized_color_avgs = np.sum(color_avgs * color_avgs_vars, axis=1) / np.sum(color_avgs_vars)
-        normalized_color_avgs -= np.mean(normalized_color_avgs)
-        normalized_color_avgs /= np.std(normalized_color_avgs)
+        normalized_color_avgs = get_region_colors(x_pixels, y_pixels, offset, image, thickness, alpha)
 
         z_scale = np.max([np.std(x_pixels), np.std(y_pixels)]) * alpha
         z = normalized_color_avgs * z_scale
