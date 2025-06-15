@@ -1,5 +1,16 @@
 from torch import no_grad
+import os
+import json
+import mlflow
+import torch
+from torch.utils.tensorboard import SummaryWriter
 
+
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment("BrainLayerClassifier")
+
+log_dir = "../logs"
+writer = SummaryWriter(log_dir)
 
 def train_one_epoch(model, optimizer, criterion, dataloader, device):
     model.train()
@@ -37,3 +48,35 @@ def validate_one_epoch(model, criterion, dataloader, device):
         avg_loss = total_loss / total_nodes
         avg_accuracy = correct / total_nodes
         return avg_loss, avg_accuracy
+
+
+def train_loop(model, optimizer, criterion, scheduler, loaders, device, num_epochs, params):
+    train_loader, val_loader = loaders
+
+    print("loop")
+    with mlflow.start_run():
+        mlflow.log_params(params)
+
+        for epoch in range(1, num_epochs + 1):
+            print("epoch: ", epoch)
+
+            train_loss = train_one_epoch(model, optimizer, criterion, train_loader, device)
+            val_loss, val_acc = validate_one_epoch(model, criterion, val_loader, device)
+            scheduler.step()
+            print(f"Epoch {epoch:03d} : Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}")
+
+            writer.add_scalar('Loss/val', val_loss, epoch)
+            writer.add_scalar('Accuracy/val', val_acc, epoch)
+
+            mlflow.log_metric('train_loss', train_loss, step=epoch)
+            mlflow.log_metric('val_loss', val_loss, step=epoch)
+            mlflow.log_metric('val_accuracy', val_acc, step=epoch)
+
+            os.makedirs('../models', exist_ok=True)
+            model_path = '../models/model.pth'
+            torch.save(model.state_dict(), model_path)
+            mlflow.log_artifact(model_path, artifact_path='model')
+
+            metrics = {'val_accuracy': val_acc}
+            with open('../metrics.json', 'w') as f:
+                json.dump(metrics, f)

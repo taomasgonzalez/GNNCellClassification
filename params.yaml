@@ -1,0 +1,5 @@
+train:
+  learning_rate: 0.001
+  num_epochs: 2
+  weight_decay: 1e-5
+  batch_size: 32
