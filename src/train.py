@@ -50,8 +50,9 @@ def validate_one_epoch(model, criterion, dataloader, device):
         return avg_loss, avg_accuracy
 
 
-def train_loop(model, optimizer, criterion, scheduler, loaders, device, num_epochs, params):
+def train_loop(model, optimizer, criterion, scheduler, loaders, device, params):
     train_loader, val_loader = loaders
+    num_epochs = params["num_epochs"]
 
     print("loop")
     with mlflow.start_run():
