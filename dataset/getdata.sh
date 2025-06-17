@@ -5,8 +5,10 @@ pushd "$( dirname "$0" )"
 data_dir="data"
 img_dir="images"
 
+echo "Downloading data if needed..."
+
 if [[ -d ${data_dir} && -d ${img_dir} ]]; then
-  echo "Don't download data: Both ${data_dir} and ${img_dir} exists"
+  echo "Don't download data: Both ${data_dir} and ${img_dir} already exist"
 else
   echo "Downloading data from source..."
   mkdir -p data images
