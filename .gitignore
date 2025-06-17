@@ -1,6 +1,12 @@
-venv
-out
+artifacts/
 dataset/*
+dvc-store/*
 !dataset/getdata.sh
 .ipynb_checkpoints
+mlflow.log
+mlflow.pid
+mlflow.db
+logs
+out
 src/__pycache__
+venv

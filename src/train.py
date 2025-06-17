@@ -2,15 +2,18 @@ from torch import no_grad
 import os
 import json
 import mlflow
+import os
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
 
-mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("BrainLayerClassifier")
+def start_tracking_experiment(exp_name="BrainLayerClassifier", port="5000", log_dir="../logs"):
 
-log_dir = "../logs"
-writer = SummaryWriter(log_dir)
+    mlflow.set_tracking_uri("http://localhost:" + port)
+    mlflow.set_experiment(exp_name)
+
+    return SummaryWriter(log_dir)
+
 
 def train_one_epoch(model, optimizer, criterion, dataloader, device):
     model.train()
@@ -50,7 +53,7 @@ def validate_one_epoch(model, criterion, dataloader, device):
         return avg_loss, avg_accuracy
 
 
-def train_loop(model, optimizer, criterion, scheduler, loaders, device, params):
+def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, writer):
     train_loader, val_loader = loaders
     num_epochs = params["num_epochs"]
 

@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 import scanpy as sc
 import math
+from matplotlib import pyplot as plt
+import networkx as nx
 
 
 def create_graphs(graph_dir, ann_data, histology_imgs):
@@ -121,3 +123,12 @@ def calculate_adj_matrix(x_pixels, y_pixels, offset, image, thickness=49, alpha=
         X = np.array([x_pixels, y_pixels]).T.astype(np.float64)
 
     return pairwise_distance(X)
+
+
+def visualize_graph(graph, color):
+    plt.figure(figsize=(7,7))
+    plt.xticks([])
+    plt.yticks([])
+    nx.draw_networkx(graph, pos=nx.spring_layout(graph, seed=42), with_labels=False,
+                     node_color=color, cmap="Set2")
+    plt.show()

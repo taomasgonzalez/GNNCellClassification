@@ -1,11 +1,15 @@
 import numpy as np
-from graph import get_region_colors
+from graph import get_region_colors, visualize_graph
 import os
 import random
 import scanpy as sc
 from scipy.sparse import vstack
 from sklearn.decomposition import TruncatedSVD
 import torch
+from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
+import yaml
+from torch_geometric.utils import to_networkx
 
 
 def train_val_test_split(ann_data, seed):
@@ -149,3 +153,41 @@ def get_data_pos(ann_data):
         data_pos[patient_id] = y_tensor
 
     return data_pos
+
+
+def get_dataloaders(patients, data_x, edge_indices, edge_features, data_pos, data_y, params):
+
+    batch_size = params['batch_size']
+
+    train_patients, val_patients, test_patients = patients
+    train_datalist = []
+    val_datalist = []
+    test_datalist = []
+
+    for patient_id in train_patients + val_patients + test_patients:
+        curr_data = Data(
+            x=data_x[patient_id],
+            edge_index=edge_indices[patient_id],
+            edge_attr=edge_features[patient_id],
+            pos=data_pos[patient_id],
+            y=data_y[patient_id]
+        )
+        if patient_id in train_patients:
+            train_datalist.append(curr_data)
+        elif patient_id in val_patients:
+            val_datalist.append(curr_data)
+        elif patient_id in test_patients:
+            test_datalist.append(curr_data)
+        else:
+            raise Exception("patient doesn't belong to neither training, validation nor test groups")
+
+    train_loader = DataLoader(dataset=train_datalist, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(dataset=val_datalist, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(dataset=test_datalist, batch_size=batch_size, shuffle=False)
+
+    return train_loader, val_loader, test_loader
+
+# train_datalist[0]
+def visualize_data(data):
+    graph = to_networkx(data, to_undirected=True)
+    visualize_graph(graph, color=data.y)
