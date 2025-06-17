@@ -19,7 +19,6 @@ def create_graphs(graph_dir, ann_data, histology_imgs):
     for patient_id, data in ann_data.items():
         print(f"Creating Graphs for sample {patient_id} …")
 
-        offset = offsets[patient_id]
         hires_scale = ann_data[patient_id].uns['spatial'][patient_id]['scalefactors']['tissue_hires_scalef']
         spot_pixels = ann_data[patient_id].obsm['spatial'] * hires_scale
         spot_pixels = spot_pixels.astype(int)
