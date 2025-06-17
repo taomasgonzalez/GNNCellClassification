@@ -4,6 +4,7 @@ import model as model_module
 from os.path import join as path_join
 import preprocess
 import subprocess
+import torch
 import train
 import yaml
 
@@ -83,6 +84,20 @@ if __name__ == '__main__':
     params = yaml.safe_load(open("params.yaml"))['train']
 
     patients = (train_patients, val_patients, test_patients)
+
+    torch.save(data_x, "data_x.pt")
+    torch.save(edge_indices, "edge_indices.pt")
+    torch.save(edge_features, "edge_features.pt")
+    torch.save(data_pos, "data_pos.pt")
+    torch.save(data_y, "data_y.pt")
+
+    del data_x, edge_indices, edge_features, data_pos, data_y
+
+    data_x = torch.load("data_x.pt")
+    edge_indices = torch.load("edge_indices.pt")
+    edge_features = torch.load("edge_features.pt")
+    data_pos = torch.load("data_pos.pt")
+    data_y = torch.load("data_y.pt")
 
     train_loader, val_loader, test_loader = dataloader.get_dataloaders(patients, data_x, \
                                                                        edge_indices, edge_features, \
