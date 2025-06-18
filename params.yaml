@@ -8,3 +8,4 @@ train:
   hidden1: 102
   hidden2: 50
   hidden3: 15
+  label_smoothing: 0.002

@@ -56,7 +56,16 @@ def train_model(tensors_dir, params_file):
     device, model = model_module.get_model(params)
 
     optimizer = model_module.get_optimizer(model, params)
-    criterion = model_module.get_criterion()
+
+    # obtain class frequencies
+    class_counts = torch.zeros(model.num_classes, dtype=torch.long)
+    for batch in train_loader:
+        class_counts += torch.bincount(batch.y, minlength=model.num_classes)
+    total = class_counts.sum().item()
+    class_freqs = class_counts.float() / total
+    class_freqs = class_freqs.to(device)
+
+    criterion = model_module.get_criterion(class_freqs, params)
     scheduler = model_module.get_scheduler(optimizer, params)
 
     port="5000"

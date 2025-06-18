@@ -48,8 +48,10 @@ def get_optimizer(model, params):
     return optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 
-def get_criterion():
-    return torch_nn.CrossEntropyLoss()
+def get_criterion(class_freq, params):
+    weights = 1 / class_freq
+    label_smoothing = params['label_smoothing']
+    return torch_nn.CrossEntropyLoss(weight=weights, label_smoothing=label_smoothing)
 
 
 def get_scheduler(optimizer, params):
