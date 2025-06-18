@@ -76,11 +76,11 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             mlflow.log_metric('val_loss', val_loss, step=epoch)
             mlflow.log_metric('val_accuracy', val_acc, step=epoch)
 
-            os.makedirs('../models', exist_ok=True)
-            model_path = '../models/model.pth'
+            os.makedirs('models', exist_ok=True)
+            model_path = os.path.join("models", "model.pth")
             torch.save(model.state_dict(), model_path)
             mlflow.log_artifact(model_path, artifact_path='model')
 
             metrics = {'val_accuracy': val_acc}
-            with open('../metrics.json', 'w') as f:
+            with open('metrics.json', 'w') as f:
                 json.dump(metrics, f)

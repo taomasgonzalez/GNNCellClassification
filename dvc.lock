@@ -79,3 +79,51 @@ stages:
       md5: 75be6e5345a33e27e5de258dee95f7ba.dir
       size: 15881378
       nfiles: 6
+  train:
+    cmd: python3 src/main.py train --tensors_dir dataset/tensors --params_file 
+      params.yaml
+    deps:
+    - path: dataset/tensors
+      hash: md5
+      md5: 75be6e5345a33e27e5de258dee95f7ba.dir
+      size: 15881378
+      nfiles: 6
+    - path: params.yaml
+      hash: md5
+      md5: 2cddb22febe0d7de01b714a7c9cc43ab
+      size: 106
+    - path: src/dataloader.py
+      hash: md5
+      md5: c59708b437c6448c481bea60f53e686d
+      size: 6685
+    - path: src/main.py
+      hash: md5
+      md5: 028d176fe945c8f37085c0db2da85407
+      size: 5732
+    - path: src/mlflow_server.py
+      hash: md5
+      md5: dff011f480374bf823c68d292ec49247
+      size: 856
+    - path: src/model.py
+      hash: md5
+      md5: 5d46447c528846308caf4f46abb1857c
+      size: 1654
+    - path: src/train.py
+      hash: md5
+      md5: 312500cd72e4c384dd911aca2dfb72de
+      size: 3076
+    params:
+      params.yaml:
+        train.batch_size: 32
+        train.learning_rate: 0.001
+        train.num_epochs: 2
+    outs:
+    - path: metrics.json
+      hash: md5
+      md5: 224b072bd2b02f9237081c3c08aaf4a6
+      size: 36
+    - path: models
+      hash: md5
+      md5: d839d2d6b45ab84b789b0a59e5dad7b8.dir
+      size: 49137
+      nfiles: 1
