@@ -56,4 +56,4 @@ def get_criterion(class_freq, params):
 
 def get_scheduler(optimizer, params):
     num_epochs = params['num_epochs']
-    return optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
+    return optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs//8)
