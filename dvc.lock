@@ -86,8 +86,8 @@ stages:
       nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 99daabcc167ede9a196bb98076bcd83c
-      size: 176
+      md5: 954edea2d1c4cb8bb753b625fdb5394d
+      size: 177
     - path: src/dataloader.py
       hash: md5
       md5: c59708b437c6448c481bea60f53e686d
@@ -116,10 +116,10 @@ stages:
     outs:
     - path: metrics.json
       hash: md5
-      md5: 54352147407396b5e32a00c4eb5bdeeb
+      md5: 93c95e78e91c5672edfee66c23287384
       size: 36
     - path: models
       hash: md5
-      md5: 3318774b28334a5d8e0d5ac162a0d5d1.dir
-      size: 49137
+      md5: cafa625e1f7cc690ceb1217cf679ba50.dir
+      size: 149937
       nfiles: 1

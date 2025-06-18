@@ -5,7 +5,7 @@ train:
   num_epochs: 400
   weight_decay: 1e-5
   batch_size: 32
-  hidden1: 102
-  hidden2: 50
-  hidden3: 15
+  hidden1: 208
+  hidden2: 102
+  hidden3: 40
   label_smoothing: 0.002
