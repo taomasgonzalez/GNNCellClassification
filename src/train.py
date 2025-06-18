@@ -2,9 +2,11 @@ from torch import no_grad
 import os
 import json
 import mlflow
+import numpy as np
 import os
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from torcheval.metrics import MulticlassAccuracy
 
 
 def start_tracking_experiment(exp_name="BrainLayerClassifier", port="5000", log_dir="../logs"):
@@ -38,18 +40,22 @@ def train_one_epoch(model, optimizer, criterion, dataloader, device):
 def validate_one_epoch(model, criterion, dataloader, device):
     model.eval()
 
-    correct, total_nodes, total_loss = (0, 0, 0)
+    num_classes = model.num_classes
+
+    metric = MulticlassAccuracy(average="micro", num_classes=num_classes)
+
+    total_nodes, total_loss = (0, 0)
     with no_grad():
         for batch in dataloader:
             batch = batch.to(device)
             outputs = model(batch.x, batch.edge_index)
             loss = criterion(outputs, batch.y)
-            pred = outputs.argmax(dim=1)
+            metric.update(outputs, batch.y)
+
             total_loss += loss.item() * batch.num_nodes
-            correct += (pred == batch.y).sum().item()
             total_nodes += batch.num_nodes
         avg_loss = total_loss / total_nodes
-        avg_accuracy = correct / total_nodes
+        avg_accuracy = metric.compute().item()
         return avg_loss, avg_accuracy
 
 
@@ -57,7 +63,9 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
     train_loader, val_loader = loaders
     num_epochs = params["num_epochs"]
 
-    print("loop")
+    os.makedirs('models', exist_ok=True)
+
+    best_val_acc = 0
     with mlflow.start_run():
         mlflow.log_params(params)
 
@@ -76,11 +84,13 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             mlflow.log_metric('val_loss', val_loss, step=epoch)
             mlflow.log_metric('val_accuracy', val_acc, step=epoch)
 
-            os.makedirs('models', exist_ok=True)
-            model_path = os.path.join("models", "model.pth")
-            torch.save(model.state_dict(), model_path)
-            mlflow.log_artifact(model_path, artifact_path='model')
+            if best_val_acc < val_acc:
+                best_val_acc = val_acc
+                model_path = os.path.join("models", "model.pth")
+                torch.save(model.state_dict(), model_path)
+                mlflow.log_artifact(model_path, artifact_path='model')
 
             metrics = {'val_accuracy': val_acc}
+
             with open('metrics.json', 'w') as f:
                 json.dump(metrics, f)

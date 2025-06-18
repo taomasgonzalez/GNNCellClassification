@@ -8,6 +8,8 @@ class GNNClassifier(torch_nn.Module):
     def __init__(self, in_channels=51, hidden1=102, hidden2=50, hidden3=15, num_classes=8, dropout=0.25):
         super().__init__()
 
+        self.num_classes = num_classes
+
         self.seq = geom_nn.Sequential(
             "x, edge_index",
             [
