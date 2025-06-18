@@ -49,3 +49,33 @@ stages:
       md5: c37e1615aa3dd1fafb9796d4a11cc192.dir
       size: 1534893718
       nfiles: 24
+  featurize:
+    cmd: python3 src/main.py featurize --dataset_dir dataset --graph_dir 
+      out/graphs --tensors_dir dataset/tensors
+    deps:
+    - path: src/dataloader.py
+      hash: md5
+      md5: c59708b437c6448c481bea60f53e686d
+      size: 6685
+    - path: src/graph.py
+      hash: md5
+      md5: 77a13619ad9791e8b7c1ad2dc5eafa2a
+      size: 5274
+    - path: src/load_data.py
+      hash: md5
+      md5: deeaedf2f9f50161c13b796683e29697
+      size: 977
+    - path: src/main.py
+      hash: md5
+      md5: 028d176fe945c8f37085c0db2da85407
+      size: 5732
+    - path: src/preprocess.py
+      hash: md5
+      md5: c174f11fe2c359f47951fe4bf1a3b3b4
+      size: 4363
+    outs:
+    - path: dataset/tensors
+      hash: md5
+      md5: 75be6e5345a33e27e5de258dee95f7ba.dir
+      size: 15881378
+      nfiles: 6
