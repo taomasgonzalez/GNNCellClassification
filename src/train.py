@@ -42,7 +42,10 @@ def validate_one_epoch(model, criterion, dataloader, device):
 
     num_classes = model.num_classes
 
-    metric = MulticlassAccuracy(average="micro", num_classes=num_classes)
+    val_metrics = {
+        'acc_micro': MulticlassAccuracy(average="micro", num_classes=num_classes),
+        'per_class_acc': MulticlassAccuracy(average=None, num_classes=num_classes),
+    }
 
     total_nodes, total_loss = (0, 0)
     with no_grad():
@@ -50,13 +53,16 @@ def validate_one_epoch(model, criterion, dataloader, device):
             batch = batch.to(device)
             outputs = model(batch.x, batch.edge_index)
             loss = criterion(outputs, batch.y)
-            metric.update(outputs, batch.y)
+
+            for metric in val_metrics.values():
+                metric.update(outputs, batch.y)
 
             total_loss += loss.item() * batch.num_nodes
             total_nodes += batch.num_nodes
         avg_loss = total_loss / total_nodes
-        avg_accuracy = metric.compute().item()
-        return avg_loss, avg_accuracy
+
+        val_metrics = {key: metric.compute() for key, metric in val_metrics.items()}
+        return avg_loss, val_metrics
 
 
 def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, writer):
@@ -73,7 +79,12 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             print("epoch: ", epoch)
 
             train_loss = train_one_epoch(model, optimizer, criterion, train_loader, device)
-            val_loss, val_acc = validate_one_epoch(model, criterion, val_loader, device)
+            val_loss, val_metrics = validate_one_epoch(model, criterion, val_loader, device)
+
+            val_acc = val_metrics['acc_micro'].item()
+            per_class_acc = val_metrics['per_class_acc'].tolist()
+            per_class_acc = {f"acc_class_{i}": acc for i, acc in enumerate(per_class_acc)}
+
             scheduler.step()
             print(f"Epoch {epoch:03d} : Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}")
 
@@ -83,6 +94,7 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             mlflow.log_metric('train_loss', train_loss, step=epoch)
             mlflow.log_metric('val_loss', val_loss, step=epoch)
             mlflow.log_metric('val_accuracy', val_acc, step=epoch)
+            mlflow.log_metrics(per_class_acc, step=epoch)
 
             if best_val_acc < val_acc:
                 best_val_acc = val_acc
