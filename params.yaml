@@ -2,6 +2,9 @@ featurize:
   seed: 42
 train:
   learning_rate: 0.001
-  num_epochs: 2
+  num_epochs: 200
   weight_decay: 1e-5
   batch_size: 32
+  hidden1: 102
+  hidden2: 50
+  hidden3: 15

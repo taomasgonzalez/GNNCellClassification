@@ -53,7 +53,7 @@ def train_model(tensors_dir, params_file):
                                                                        edge_indices, edge_features, \
                                                                        data_pos, data_y, params)
 
-    device, model = model_module.get_model()
+    device, model = model_module.get_model(params)
 
     optimizer = model_module.get_optimizer(model, params)
     criterion = model_module.get_criterion()

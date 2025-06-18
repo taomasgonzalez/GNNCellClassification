@@ -31,9 +31,12 @@ class GNNClassifier(torch_nn.Module):
         return x
     
 
-def get_model():
+def get_model(params):
     device = devi('cuda' if cuda.is_available() else 'cpu')
-    model = GNNClassifier().to(device)
+
+    model = GNNClassifier(hidden1=params['hidden1'], hidden2=params['hidden2'], \
+                          hidden3=params['hidden3'], num_classes=8, \
+                          dropout=0.25).to(device)
     return device, model
 
 

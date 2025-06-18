@@ -35,10 +35,6 @@ stages:
       hash: md5
       md5: deeaedf2f9f50161c13b796683e29697
       size: 977
-    - path: src/main.py
-      hash: md5
-      md5: 028d176fe945c8f37085c0db2da85407
-      size: 5732
     - path: src/preprocess.py
       hash: md5
       md5: c174f11fe2c359f47951fe4bf1a3b3b4
@@ -67,8 +63,8 @@ stages:
       size: 977
     - path: src/main.py
       hash: md5
-      md5: 028d176fe945c8f37085c0db2da85407
-      size: 5732
+      md5: 1f498a9532c5c049cbec16d3bc9c40fa
+      size: 5738
     - path: src/preprocess.py
       hash: md5
       md5: c174f11fe2c359f47951fe4bf1a3b3b4
@@ -90,24 +86,24 @@ stages:
       nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 2cddb22febe0d7de01b714a7c9cc43ab
-      size: 106
+      md5: 1c91010d0830d3625309fe247a6689c8
+      size: 152
     - path: src/dataloader.py
       hash: md5
       md5: c59708b437c6448c481bea60f53e686d
       size: 6685
     - path: src/main.py
       hash: md5
-      md5: 028d176fe945c8f37085c0db2da85407
-      size: 5732
+      md5: 1f498a9532c5c049cbec16d3bc9c40fa
+      size: 5738
     - path: src/mlflow_server.py
       hash: md5
       md5: dff011f480374bf823c68d292ec49247
       size: 856
     - path: src/model.py
       hash: md5
-      md5: 5d46447c528846308caf4f46abb1857c
-      size: 1654
+      md5: 43fede3a22a30405a81b3a66569dbff1
+      size: 1825
     - path: src/train.py
       hash: md5
       md5: 312500cd72e4c384dd911aca2dfb72de
@@ -116,14 +112,14 @@ stages:
       params.yaml:
         train.batch_size: 32
         train.learning_rate: 0.001
-        train.num_epochs: 2
+        train.num_epochs: 200
     outs:
     - path: metrics.json
       hash: md5
-      md5: 224b072bd2b02f9237081c3c08aaf4a6
+      md5: 8ff45c436917ff812f084292fea45bf1
       size: 36
     - path: models
       hash: md5
-      md5: d839d2d6b45ab84b789b0a59e5dad7b8.dir
+      md5: 7c866bd89fd36f49889e3ed9c19a0636.dir
       size: 49137
       nfiles: 1

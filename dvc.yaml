@@ -11,7 +11,7 @@ stages:
   preprocess:
     cmd: python3 src/main.py preprocess --dataset_dir dataset --graph_dir out/graphs
     deps:
-      - src/main.py
+      # - src/main.py
       - src/preprocess.py
       - src/load_data.py
       - src/graph.py
