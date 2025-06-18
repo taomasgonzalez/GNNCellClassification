@@ -1,0 +1,51 @@
+schema: '2.0'
+stages:
+  getdata:
+    cmd: python3 src/main.py getdata --dataset_dir dataset
+    deps:
+    - path: dataset/getdata.sh
+      hash: md5
+      md5: 6d59697dafb25c02eda3b4acc9646d55
+      size: 727
+      isexec: true
+    outs:
+    - path: dataset/data
+      hash: md5
+      md5: 6c86abeef78f82b423ad507334e9a77c.dir
+      size: 2680161928
+      nfiles: 13
+    - path: dataset/images
+      hash: md5
+      md5: 19cf81bfe0408f1df338cea98f2b13f3.dir
+      size: 6400957080
+      nfiles: 12
+  preprocess:
+    cmd: python3 src/main.py preprocess --dataset_dir dataset --graph_dir 
+      out/graphs
+    deps:
+    - path: src/gene_filtering.py
+      hash: md5
+      md5: 3d6c39bd7abd49e96154631f09bb4382
+      size: 1337
+    - path: src/graph.py
+      hash: md5
+      md5: 77a13619ad9791e8b7c1ad2dc5eafa2a
+      size: 5274
+    - path: src/load_data.py
+      hash: md5
+      md5: deeaedf2f9f50161c13b796683e29697
+      size: 977
+    - path: src/main.py
+      hash: md5
+      md5: 028d176fe945c8f37085c0db2da85407
+      size: 5732
+    - path: src/preprocess.py
+      hash: md5
+      md5: c174f11fe2c359f47951fe4bf1a3b3b4
+      size: 4363
+    outs:
+    - path: out/graphs
+      hash: md5
+      md5: c37e1615aa3dd1fafb9796d4a11cc192.dir
+      size: 1534893718
+      nfiles: 24

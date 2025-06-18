@@ -19,17 +19,21 @@ def get_data(dataset_dir):
 
 def preprocess_data(dataset_dir, graph_dir):
     data_dir, img_dir = path_join(dataset_dir, "data"), path_join(dataset_dir, "images")
+    os.makedirs(graph_dir, exist_ok=True)
     preprocess.main(data_dir, img_dir, graph_dir)
 
 
-def featurize_data(dataset_dir, graph_dir, tensors_dir, seed):
+def featurize_data(dataset_dir, graph_dir, tensors_dir, params_file):
     data_dir = path_join(dataset_dir, "data")
     files = [file for file in os.listdir(data_dir) if file.endswith(".h5ad")]
     filepaths = [os.path.join(data_dir, file) for file in files]
 
     ann_data = preprocess.load_ann_data(filenames=files, filepaths=filepaths)
 
-    patients = dataloader.train_val_test_split(ann_data, seed)
+    with open(params_file) as parfile:
+        params = yaml.safe_load(parfile)['featurize']
+
+    patients = dataloader.train_val_test_split(ann_data, params['seed'])
     preprocess.prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir)
 
 
@@ -43,7 +47,7 @@ def train_model(tensors_dir, params_file):
     patients = torch.load(path_join(tensors_dir, "patients.pt"))
 
     with open(params_file) as parfile:
-        params = yaml.safe_load(open(parfile))['train']
+        params = yaml.safe_load(parfile)['train']
 
     train_loader, val_loader, test_loader = dataloader.get_dataloaders(patients, data_x, \
                                                                        edge_indices, edge_features, \
@@ -88,10 +92,10 @@ def main():
 
     preprocess = subparsers.add_parser("preprocess", help="Build adjacency graphs")
     preprocess.add_argument(
-        "--data_dir", "-d",
+        "--dataset_dir", "-d",
         type=str,
         default=data_dir_default,
-        help="Path to the directory containing .h5ad files"
+        help="Path to the directory containing the raw data"
     )
     preprocess.add_argument(
         "--graph_dir", "-g",
@@ -119,13 +123,19 @@ def main():
         default=tensors_dir_default,
         help="Path to the directory where feature tensors will be output to"
     )
+    featurize.add_argument(
+        "--params_file", "-p",
+        type=str,
+        default=params_file_default,
+        help="Path to yaml file containing the parameters used to obtain the features out of the data"
+    )
 
     train = subparsers.add_parser("train", help="Train model")
     train.add_argument(
         "--params_file", "-p",
         type=str,
         default=params_file_default,
-        help="Path to yaml file containing the model's hyperparameters used to define the model"
+        help="Path to yaml file containing the model's hyperparameters used to train/define the model"
     )
     train.add_argument(
         "--tensors_dir", "-t",
@@ -147,9 +157,9 @@ def main():
     if args.cmd == "getdata":
         get_data(args.dataset_dir)
     if args.cmd == "preprocess":
-        preprocess_data(args.data_dir, args.graph_dir)
+        preprocess_data(args.dataset_dir, args.graph_dir)
     if args.cmd == "featurize":
-        featurize_data(args.dataset_dir, args.graph_dir, args.tensors_dir)
+        featurize_data(args.dataset_dir, args.graph_dir, args.tensors_dir, args.params_file)
     if args.cmd == "train":
         train_model(args.tensors_dir, args.params_file)
     else:

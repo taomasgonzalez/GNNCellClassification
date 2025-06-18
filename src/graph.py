@@ -41,7 +41,8 @@ def create_graphs(graph_dir, ann_data, histology_imgs):
 
         graph_img_path = os.path.join(graph_dir, f'{patient_id}_graph.jpg')
         if not cv2.imwrite(graph_img_path, np.flip(image_cpy, 0)):
-            raise FileNotFoundError(f"Could not write graph at {graph_img_path}")
+            print(str(graph_img_path))
+            raise FileNotFoundError("Could not write graph at", str(graph_img_path))
 
         graph_path = os.path.join(graph_dir, f'{patient_id}_adj')
         adj = calculate_adj_matrix(x_pixels=x_pixels,y_pixels=y_pixels, image=flipped_image, thickness=thickness,  \
