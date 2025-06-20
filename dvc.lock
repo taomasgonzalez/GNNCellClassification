@@ -11,7 +11,7 @@ stages:
     outs:
     - path: dataset/data
       hash: md5
-      md5: 6c86abeef78f82b423ad507334e9a77c.dir
+      md5: ad940ab30fba07a7c956b2840a9e6f9d.dir
       size: 2680161928
       nfiles: 13
     - path: dataset/images
@@ -116,10 +116,10 @@ stages:
     outs:
     - path: metrics.json
       hash: md5
-      md5: 93c95e78e91c5672edfee66c23287384
+      md5: ab59528ff04d963b8ce07d2b97147181
       size: 36
     - path: models
       hash: md5
-      md5: cafa625e1f7cc690ceb1217cf679ba50.dir
+      md5: d9940a523fea630e1a1847e25d599ddd.dir
       size: 149937
       nfiles: 1

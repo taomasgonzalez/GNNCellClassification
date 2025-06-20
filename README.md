@@ -9,12 +9,10 @@ A multimodal Graph Neural Network (GCN) pipeline for automated classification of
 - [Project Overview](#project-overview)
 - [Data](#data)
 - [Installation](#installation)
-- [Usage](#usage)
-- [Pipeline Stages](#pipeline-stages)
+- [Reproducibility](#reproducibility)
 - [Model Architecture](#model-architecture)
 - [Experiment Tracking](#experiment-tracking)
 - [Results](#results)
-- [Reproducibility](#reproducibility)
 - [Report](#report)
 - [References](#references)
 - [Acknowledgments](#acknowledgments)
@@ -53,9 +51,27 @@ This project implements a multimodal GCN to classify brain layers in the DLPFC u
    ```
 ---
 
-## Pipeline Stages
+## Reproducibility
 
-The pipeline can be run end-to-end using [DVC](https://dvc.org/):
+- All steps are tracked with DVC and can be reproduced with `dvc repro`.
+- Random seeds are set for data splits and PCA.
+- All dependencies are listed in `requirements.txt`.
+
+### Docker
+
+A Dockerfile is provided for reproducing builds. Currently, the Dockerfile only supports the use of
+CPU, but it should be easily extendable to support GPU as well.
+
+  ```bash
+  docker build classifier .
+  docker run -it -v "$(pwd)":/work classifier
+  . /opt/venv/bin/activate
+  dvc repro
+  ```
+
+### Pipeline Stages
+
+As shown above, the pipeline can be run end-to-end using [DVC](https://dvc.org/):
 
 ```bash
 dvc repro
@@ -69,7 +85,7 @@ Stages defined in `dvc.yaml`:
 
 ---
 
-### Usage
+#### Python implementation of the Pipeline stages
 
 The pipeline can also be controlled via a command-line interface:
 
@@ -98,8 +114,6 @@ python3 src/main.py <stage> [--options]
   ```bash
   python3 src/main.py train --tensors_dir dataset/tensors --params_file params.yaml
   ```
-
-
 ---
 
 ## Model Architecture
@@ -132,13 +146,6 @@ python3 src/main.py <stage> [--options]
 
 See the [report](#report) for detailed results and analysis.
 
----
-
-## Reproducibility
-
-- All steps are tracked with DVC and can be reproduced with `dvc repro`.
-- Random seeds are set for data splits and PCA.
-- All dependencies are listed in `requirements.txt`.
 
 ---
 
