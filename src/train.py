@@ -6,7 +6,7 @@ import numpy as np
 import os
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from torcheval.metrics import MulticlassAccuracy
+from torcheval.metrics import MulticlassAccuracy, MulticlassF1Score
 
 
 def start_tracking_experiment(exp_name="BrainLayerClassifier", port="5000", log_dir="../logs"):
@@ -45,6 +45,8 @@ def validate_one_epoch(model, criterion, dataloader, device):
     val_metrics = {
         'acc_micro': MulticlassAccuracy(average="micro", num_classes=num_classes),
         'per_class_acc': MulticlassAccuracy(average=None, num_classes=num_classes),
+        'f1_micro': MulticlassF1Score(average="micro", num_classes=num_classes),
+        'per_class_f1': MulticlassF1Score(average=None, num_classes=num_classes)
     }
 
     total_nodes, total_loss = (0, 0)
@@ -84,6 +86,9 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             val_acc = val_metrics['acc_micro'].item()
             per_class_acc = val_metrics['per_class_acc'].tolist()
             per_class_acc = {f"acc_class_{i}": acc for i, acc in enumerate(per_class_acc)}
+            val_f1 = val_metrics['f1_micro'].item()
+            per_class_f1 = val_metrics['per_class_f1'].tolist()
+            per_class_f1 = {f"f1_class_{i}": acc for i, acc in enumerate(per_class_f1)}
 
             scheduler.step()
             print(f"Epoch {epoch:03d} : Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}")
@@ -94,7 +99,9 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             mlflow.log_metric('train_loss', train_loss, step=epoch)
             mlflow.log_metric('val_loss', val_loss, step=epoch)
             mlflow.log_metric('val_accuracy', val_acc, step=epoch)
+            mlflow.log_metric('val_f1_score', val_f1, step=epoch)
             mlflow.log_metrics(per_class_acc, step=epoch)
+            mlflow.log_metrics(per_class_f1, step=epoch)
 
             if best_val_acc < val_acc:
                 best_val_acc = val_acc
