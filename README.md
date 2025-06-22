@@ -86,6 +86,10 @@ Stages defined in `dvc.yaml`:
 - `train`: Trains the GNN and logs metrics/artifacts.
 - `test`: Tests the GNN and logs metrics/artifacts.
 
+### Implementation Details
+
+For researchers interested in the underlying implementation details of the featurization and training stages, the `Training.ipynb` notebook provides a comprehensive walkthrough of the internal mechanisms. This notebook demonstrates the step-by-step process of feature extraction, graph construction, and model training, offering insights into the computational pipeline's core components.
+
 ---
 
 #### Python implementation of the Pipeline stages

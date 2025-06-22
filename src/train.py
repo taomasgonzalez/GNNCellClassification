@@ -89,7 +89,7 @@ def validate_one_epoch(model, criterion, dataloader, device):
 
 
 def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, writer):
-    train_loader, val_loader, test_loader = loaders
+    train_loader, val_loader = loaders
     num_epochs = params["num_epochs"]
 
     early_stopping_params = params['early_stopping']

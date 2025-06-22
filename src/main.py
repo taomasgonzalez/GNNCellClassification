@@ -88,7 +88,7 @@ def train_model(tensors_dir, params_file):
 
     writer = train.start_tracking_experiment(exp_name=experiment_name, port=port, log_dir=log_dir)
 
-    loaders = (train_loader, val_loader, None)
+    loaders = (train_loader, val_loader)
     train.train_loop(model, optimizer, criterion, scheduler, loaders, device, train_params, writer)
 
     mlflow_server.stop_mlflow_server(pid_file_path=pid_file_path)
