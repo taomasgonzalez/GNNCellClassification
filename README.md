@@ -82,6 +82,7 @@ Stages defined in `dvc.yaml`:
 - `preprocess`: Constructs spatial graphs and adjacency matrices.
 - `featurize`: Extracts and saves node/edge features and labels.
 - `train`: Trains the GNN and logs metrics/artifacts.
+- `test`: Tests the GNN and logs metrics/artifacts.
 
 ---
 
@@ -113,6 +114,11 @@ python3 src/main.py <stage> [--options]
 - **train:** Train the GNN model.
   ```bash
   python3 src/main.py train --tensors_dir dataset/tensors --params_file params.yaml
+  ```
+
+- **test:** Test the GNN model.
+  ```bash
+  python3 src/main.py test --tensors_dir dataset/tensors --params_file params.yaml
   ```
 ---
 
