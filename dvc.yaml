@@ -2,64 +2,68 @@ stages:
   getdata:
     cmd: python3 src/main.py getdata --dataset_dir dataset
     deps:
-      # - src/main.py
-      - dataset/getdata.sh
+    # - src/main.py
+    - dataset/getdata.sh
     outs:
-      - dataset/data
-      - dataset/images
+    - dataset/data
+    - dataset/images
 
   preprocess:
-    cmd: python3 src/main.py preprocess --dataset_dir dataset --graph_dir out/graphs
+    cmd: python3 src/main.py preprocess --dataset_dir dataset --graph_dir 
+      out/graphs
     deps:
-      # - src/main.py
-      - src/preprocess.py
-      - src/load_data.py
-      - src/graph.py
-      - src/gene_filtering.py
+    # - src/main.py
+    - src/preprocess.py
+    - src/load_data.py
+    - src/graph.py
+    - src/gene_filtering.py
     outs:
-      - out/graphs
+    - out/graphs
 
   featurize:
-    cmd: python3 src/main.py featurize --dataset_dir dataset --graph_dir out/graphs --tensors_dir dataset/tensors
+    cmd: python3 src/main.py featurize --dataset_dir dataset --graph_dir 
+      out/graphs --tensors_dir dataset/tensors
     deps:
-      - src/main.py
-      - src/preprocess.py
-      - src/dataloader.py
-      - src/load_data.py
-      - src/graph.py
+    - src/main.py
+    - src/preprocess.py
+    - src/dataloader.py
+    - src/load_data.py
+    - src/graph.py
     outs:
-      - dataset/tensors
+    - dataset/tensors
 
   train:
-    cmd: python3 src/main.py train --tensors_dir dataset/tensors --params_file params.yaml
+    cmd: python3 src/main.py train --tensors_dir dataset/tensors --params_file 
+      params.yaml
     deps:
-      - src/main.py
-      - src/train.py
-      - src/model.py
-      - src/mlflow_server.py
-      - src/dataloader.py
-      - params.yaml
-      - dataset/tensors
+    - src/main.py
+    - src/train.py
+    - src/model.py
+    - src/mlflow_server.py
+    - src/dataloader.py
+    - params.yaml
+    - dataset/tensors
     params:
-      - train.learning_rate
-      - train.num_epochs
-      - train.batch_size
-      - train.hidden1
-      - train.hidden2
-      - train.hidden3
-      - train.label_smoothing
+    - train.learning_rate
+    - train.num_epochs
+    - train.batch_size
+    - train.hidden1
+    - train.hidden2
+    - train.hidden3
+    - train.label_smoothing
     outs:
-      - models
+    - models
     metrics:
-      - metrics.json
+    - metrics.json
 
   test:
-    cmd: python3 src/main.py test --tensors_dir dataset/tensors --params_file params.yaml
+    cmd: python3 src/main.py test --tensors_dir dataset/tensors --params_file 
+      params.yaml
     deps:
-      - src/main.py
-      - src/train.py
-      - src/model.py
-      - src/mlflow_server.py
-      - src/dataloader.py
-      - params.yaml
-      - dataset/tensors
+    - dataset/tensors
+    - params.yaml
+    - src/dataloader.py
+    - src/main.py
+    - src/mlflow_server.py
+    - src/model.py
+    - src/train.py
