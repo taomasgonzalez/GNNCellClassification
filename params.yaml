@@ -10,6 +10,8 @@ train:
   hidden2: 102
   hidden3: 40
   label_smoothing: 0.002
+  early_stopping:
+    patience: 40
 tracking:
   port: 5000
   artifacts: "artifacts"

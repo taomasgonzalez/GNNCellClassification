@@ -9,6 +9,28 @@ from torch.utils.tensorboard import SummaryWriter
 from torcheval.metrics import MulticlassAccuracy, MulticlassF1Score
 
 
+class EarlyStopper:
+    def __init__(self, patience=30):
+        self.patience = patience
+        self.counter = 0
+        self.best_score = np.inf
+
+    def should_early_stop(self, curr_score):
+        if curr_score > self.best_score:
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        else:
+            self.best_score = curr_score
+            self.counter = 0
+
+        return False
+
+    def reset(self):
+        self.best_score = np.inf
+        self.counter = 0
+
+
 def start_tracking_experiment(exp_name="BrainLayerClassifier", port="5000", log_dir="../logs"):
 
     mlflow.set_tracking_uri("http://localhost:" + port)
@@ -71,6 +93,11 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
     train_loader, val_loader, test_loader = loaders
     num_epochs = params["num_epochs"]
 
+    early_stopping_params = params['early_stopping']
+    early_stopper = EarlyStopper(
+        patience=early_stopping_params['patience'],
+    )
+
     os.makedirs('models', exist_ok=True)
 
     best_val_acc = 0
@@ -113,6 +140,10 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
 
             with open('metrics.json', 'w') as f:
                 json.dump(metrics, f)
+
+            if early_stopper.should_early_stop(val_loss):
+                mlflow.log_metric('early_stopping_epoch', epoch, step=epoch)
+                break
 
 
 def test(model, criterion, test_loader, device, writer):
