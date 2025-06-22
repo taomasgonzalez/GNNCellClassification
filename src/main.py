@@ -108,6 +108,7 @@ def test_model(tensors_dir, params_file):
         featurize_params = all_params['featurize']
         test_params = all_params['train']
         test_params['seed'] = featurize_params['seed']
+        test_params['pca_components'] = featurize_params['pca_components']
         tracking_params = all_params['tracking']
 
     utils.set_seed(test_params['seed'])
