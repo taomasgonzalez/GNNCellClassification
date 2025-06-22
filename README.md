@@ -159,6 +159,15 @@ See the [report](#report) for detailed results and analysis.
 
 ## Report
 
+To build the project's report, run:
+
+```
+cd report
+docker build -t report-builder .
+docker run --rm -v "$(pwd)":/work report-builder pdflatex report.tex
+```
+
+You'll find the `report.pdf` generated in the directory.
 
 ---
 
@@ -167,6 +176,9 @@ See the [report](#report) for detailed results and analysis.
 - [spatialDLPFC dataset](https://github.com/LieberInstitute/spatialDLPFC)
 - [10x Genomics Visium](https://www.10xgenomics.com/products/spatial-gene-expression)
 - Kipf & Welling, "Semi-Supervised Classification with Graph Convolutional Networks", ICLR 2017
+- [SpaGCN](https://github.com/jianhuupenn/SpaGCN)
+- Luo et al., "Deep learning in integrating spatial transcriptomics with other modalities", Briefings in Bioinformatics, 2025
+
 
 ---
 

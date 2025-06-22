@@ -3,7 +3,6 @@ import os
 import json
 import mlflow
 import numpy as np
-import os
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torcheval.metrics import MulticlassAccuracy, MulticlassF1Score
@@ -67,7 +66,7 @@ def validate_one_epoch(model, criterion, dataloader, device):
     val_metrics = {
         'acc_micro': MulticlassAccuracy(average="micro", num_classes=num_classes),
         'per_class_acc': MulticlassAccuracy(average=None, num_classes=num_classes),
-        'f1_micro': MulticlassF1Score(average="micro", num_classes=num_classes),
+        'f1_macro': MulticlassF1Score(average="macro", num_classes=num_classes),
         'per_class_f1': MulticlassF1Score(average=None, num_classes=num_classes)
     }
 
@@ -113,7 +112,7 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
             val_acc = val_metrics['acc_micro'].item()
             per_class_acc = val_metrics['per_class_acc'].tolist()
             per_class_acc = {f"acc_class_{i}": acc for i, acc in enumerate(per_class_acc)}
-            val_f1 = val_metrics['f1_micro'].item()
+            val_f1 = val_metrics['f1_macro'].item()
             per_class_f1 = val_metrics['per_class_f1'].tolist()
             per_class_f1 = {f"f1_class_{i}": acc for i, acc in enumerate(per_class_f1)}
 
@@ -157,7 +156,7 @@ def test(model, criterion, test_loader, device, writer):
     test_acc = test_metrics['acc_micro'].item()
     per_class_acc = test_metrics['per_class_acc'].tolist()
     per_class_acc = {f"acc_class_{i}": acc for i, acc in enumerate(per_class_acc)}
-    test_f1 = test_metrics['f1_micro'].item()
+    test_f1 = test_metrics['f1_macro'].item()
     per_class_f1 = test_metrics['per_class_f1'].tolist()
     per_class_f1 = {f"f1_class_{i}": acc for i, acc in enumerate(per_class_f1)}
 

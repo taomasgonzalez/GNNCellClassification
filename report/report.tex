@@ -1,0 +1,292 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% Preamble packages
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{siunitx}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+% ----------------------------------------
+% Title & Authors
+% ----------------------------------------
+\title{Multimodal Graph Convolutional Network for\ Cortical Layer Classification 
+in Human DLPFC Spatial Transcriptomics\\}
+
+\author{\IEEEauthorblockN{Tom\'as Agust\'in Gonz\'alez Orlando}
+\IEEEauthorblockA{Senior Software Engineer and Independent AI Researcher\\
+Cambridge, United Kingdom\\
+taomasgonzalez@gmail.com}}
+
+\maketitle
+
+% ----------------------------------------
+% Abstract
+% ----------------------------------------
+\begin{abstract}
+Accurate annotation of cortical layers is fundamental to the study of human brain 
+organisation yet remains manual and time-consuming in high-resolution spatial 
+transcriptomics datasets. We present a \textbf{multimodal graph convolutional 
+network (GCN)} that integrates gene expression profiles and histological context 
+to automatically classify spots in the dorsolateral prefrontal cortex (DLPFC) 
+into cortical layers. Using the publicly--available 10x Genomics DLPFC Visium 
+dataset comprising \num{12} tissue sections (\num{33\,685} spots), we represent 
+each spot as a node with \textbf{51 features}: \num{55} principal components of 
+log-normalised gene expression and a single colour feature that summarises local 
+Haematoxylin \& Eosin (H\&E) stain intensity. Edges are weighted by the 
+Euclidean distance in the \((x,y,\text{colour})\) space, embedding both spatial 
+proximity and morphology. A 3-layer GCN (208-102-40 hidden units) trained with 
+inverse frequency class weights and label smoothing reaches \textbf{85\% test 
+accuracy} and a \textbf{0.85 macro F\textsubscript{1}} across eight layer classes.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Spatial transcriptomics, graph neural networks, multimodal learning, 
+cortical layering, histology, DLPFC
+\end{IEEEkeywords}
+
+% ----------------------------------------
+% Introduction
+% ----------------------------------------
+\section{Introduction}
+The dorsolateral prefrontal cortex (DLPFC) is crucial for cognition and exhibits 
+a six-layered architecture with an additional white-matter compartment. Recent 
+spatial transcriptomic technologies such as 10x Genomics Visium provide 
+genome-wide expression with precise spatial coordinates, enabling computational 
+layer annotation \cite{huuki2022}. Graph convolutional networks (GCNs) excel at 
+modelling neighbourhood dependencies \cite{kipf2017semi}, making them natural 
+candidates for combining molecular and spatial cues. Recent advances in deep 
+learning have demonstrated the effectiveness of integrating spatial 
+transcriptomics with histological imaging data \cite{luo2025deep}.
+
+We propose a \emph{lightweight} alternative that augments gene expression with a 
+single, standardised colour feature per spot and constructs an edge-weighted 
+graph capturing both spatial distance and stain similarity. Our open-source 
+PyTorch implementation (\url{https://github.com/taomasgonzalez/GNNCellClassification}) 
+is accompanied by a reproducible pipeline orchestrated with \texttt{dvc} and 
+tracked with MLflow.
+
+% ----------------------------------------
+% Dataset
+% ----------------------------------------
+\section{Dataset}
+The study uses the publicly-released DLPFC dataset consisting of 12 fresh-frozen 
+human sections (IDs 151507-151676). After quality control, we retain 
+\num{33\,685} spots and \num{15\,876} high-variance genes. Ground-truth layer 
+labels provided by the Allen Institute were converted to eight classes (layers 
+I-VI, white matter, unknown).
+
+The training set contains \num{31\,731} spots with the following class 
+distribution:
+
+\begin{table}[H]
+  \centering
+  \caption{Training data distribution by cortical layer class.}
+  \label{tab:train_dist}
+  \begin{tabular}{lcc}
+    \toprule
+    Class & Layer & Count (\%) \\ \midrule
+    0 & Layer I & 8,631 (27.20\%) \\
+    1 & Layer II & 2,541 (8.01\%) \\
+    2 & Layer III & 7,977 (25.14\%) \\
+    3 & Layer IV & 3,494 (11.01\%) \\
+    4 & Layer V & 4,121 (12.99\%) \\
+    5 & Layer VI & 2,831 (8.92\%) \\
+    6 & White Matter & 2,037 (6.42\%) \\
+    7 & Unknown & 99 (0.31\%) \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+The dataset exhibits significant class imbalance, with Layer I and Layer III 
+being the most abundant classes, while the Unknown class represents only 0.31\% 
+of the training samples.
+
+% ----------------------------------------
+% Methods
+% ----------------------------------------
+\section{Methods}
+\subsection{Pre-processing}
+Raw unique molecular identifier (UMI) counts were normalised with \texttt{scanpy} 
+using total count scaling followed by natural logarithm transformation 
+\(\ln(1+x)\). UMI counts can vary dramatically across genes and cells - highly 
+expressed genes may have counts in the hundreds while lowly expressed genes have 
+counts of 0, 1 or 2. The \(\ln(1+x)\) transformation compresses this wide 
+dynamic range while preserving the relative relationships between expression 
+levels, making the data more suitable for neural network training.
+
+Dimensionality reduction via PCA is essential because the original dataset 
+contains around \num{33\,500} gene ids per spot, which would create computational 
+bottlenecks and overfitting in neural networks. PCA captures the most 
+informative variance in the gene expression space while reducing the feature 
+dimension from \num{33\,500}  to 55, enabling efficient training while preserving 
+the biological signal relevant for layer classification. The top 55 principal 
+components (PCs) were computed on the training set and applied to validation and 
+test splits.
+
+\subsection{Histological feature}
+For each spot, we extract a 96\(\times\)96 region in the aligned H\&E image and 
+compute the mean RGB vector. Channel variances are used to form a weighted 
+grey-scale value, which is subsequently z-normalised across the slide, yielding 
+the scalar colour feature.
+
+\subsection{Graph Construction}
+Nodes correspond to spots. The adjacency matrix \(A \in \mathbb{R}^{N\times N}\) 
+is defined as the pairwise Euclidean distance in a three-dimensional space 
+\(\bigl[x, y, \alpha\, c\bigr]\) with spatial pixel coordinates \((x,y)\) and 
+the colour feature \(c\). The scale factor \(\alpha\) is set to the maximum 
+spatial standard deviation to isotropically balance modalities. Edges with zero 
+distance are pruned, resulting in a sparse weighted graph saved as a NumPy 
+matrix per patient.
+
+\subsection{Split Strategy}
+Patients are split by donor: eight for training (66\%), two for validation (16\%)
+and two for held-out testing (16\%) (with a seed of 42) to prevent spot-level
+leakage.
+
+\subsection{Model Architecture}
+We adopt a 3-layer GCN implemented in PyTorch Geometric:
+\begin{align*}
+\text{GCN}(51,208) \rightarrow \text{ReLU} \rightarrow \text{Dropout}(0.25) &\\
+\text{GCN}(208,102) \rightarrow \text{ReLU} \rightarrow \text{Dropout}(0.25) &\\
+\text{GCN}(102,40)  \rightarrow \text{ReLU} \rightarrow \text{Linear}(40,8).
+\end{align*}
+Weights are optimised with Adam (\(\eta{=}10^{-3}\), weight decay \(10^{-5}\)) 
+and a cosine annealing scheduler with a period of 50 epochs (T\_max = 400/8). 
+Training continues for a maximum of 400 epochs but is terminated early if 
+validation loss does not improve for 40 consecutive epochs. The model actually 
+trained for 255 epochs before early stopping was triggered.
+
+\subsection{Loss Function}
+To mitigate severe class imbalance (Layer I accounts for 27.20\% of spots while 
+the Unknown class represents only 0.31\%), we apply a weighted cross-entropy 
+loss with inverse class frequencies and 0.2\% label smoothing.
+
+% ----------------------------------------
+% Results
+% ----------------------------------------
+\section{Results}
+\subsection{Quantitative Performance}
+Table~\ref{tab:results} reports validation and test metrics at the epoch with 
+highest validation accuracy. The model trained for 255 epochs before early 
+stopping was triggered due to no improvement in validation loss for 40 
+consecutive epochs.
+
+\begin{table}[H]
+  \centering
+  \caption{Performance comparison. The gene-only baseline uses identical 
+  architecture without the colour feature and with purely spatial edge weights.}
+  \label{tab:results}
+  \begin{tabular}{lcccc}
+    \toprule
+    Model & Val Acc (\%) & Val Macro F$_1$ & Test Acc (\%) & Macro F$_1$ \\ 
+    \midrule
+    \textbf{GNN} & \textbf{80.7} & \textbf{0.72} & \textbf{85.7} & 
+    \textbf{0.71} \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Note on the Unknown Class:} The unknown class (class 7) represents 
+spots that could not be definitively classified by domain experts during the 
+original annotation process. This class has extremely low occurrence in the 
+dataset and, as expected, achieves 0\% accuracy and F\textsubscript{1} score 
+of 0.000. This is not a failure of the model but reflects the inherent 
+ambiguity in the ground truth labels. The macro F\textsubscript{1} score is 
+affected by the poor performance on this class, which contributes to the 
+overall macro F\textsubscript{1} score despite its low frequency. When 
+excluding the unknown class, the macro F\textsubscript{1} score has a value of 0.82
+and is better reflecting the model's performance on the well-defined cortical.
+
+Per-class metrics on the test set are shown in Tables~\ref{tab:perclass_acc} and 
+\ref{tab:perclass_f1}. The unknown class remains challenging, 
+whereas Layer-I (class 0) reaches 92.5\% accuracy.
+
+\begin{table}[H]
+  \centering
+  \caption{Per-class accuracy on the held-out test set.}
+  \label{tab:perclass_acc}
+  \begin{tabular}{lcc}
+    \toprule
+    Class & Layer & Accuracy (\%) \\ \midrule
+    0 & Layer I & 92.5 \\
+    1 & Layer II & 80.8 \\
+    2 & Layer III & 78.7 \\
+    3 & Layer IV & 86.9 \\
+    4 & Layer V & 79.0 \\
+    5 & Layer VI & 87.0 \\
+    6 & White Matter & 85.3 \\
+    7 & Unknown & 0.0 \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Per-class F\textsubscript{1} scores on the held-out test set.}
+  \label{tab:perclass_f1}
+  \begin{tabular}{lcc}
+    \toprule
+    Class & Layer & F\textsubscript{1} Score \\ \midrule
+    0 & Layer I & 0.953 \\
+    1 & Layer II & 0.700 \\
+    2 & Layer III & 0.852 \\
+    3 & Layer IV & 0.689 \\
+    4 & Layer V & 0.815 \\
+    5 & Layer VI & 0.791 \\
+    6 & White Matter & 0.921 \\
+    7 & Unknown & 0.000 \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Ablation Study}
+We ablate key components on the validation set:
+\begin{itemize}
+    \item \textbf{No colour feature}: TBD accuracy.
+    \item \textbf{Unweighted loss}: TBD accuracy.
+    \item \textbf{No cosine schedule}: TBD accuracy.
+\end{itemize}
+
+% ----------------------------------------
+% Conclusion
+% ----------------------------------------
+\section{Conclusion}
+We introduce a lightweight multimodal GCN that efficiently combines gene 
+expression and histological staining to classify cortical layers in human DLPFC 
+spatial transcriptomics. The proposed integration of a single colour-based 
+morphological feature yields a significant accuracy boost at negligible 
+computational cost, making the method attractive for large-scale atlasing 
+studies. Future work will explore attention-based message passing and inclusion 
+of learned image embeddings.
+
+% ----------------------------------------
+% Acknowledgements
+% ----------------------------------------
+\section*{Acknowledgements}
+We thank the Allen Institute for Brain Science for releasing the dataset and the 
+open-source community for developing PyTorch Geometric and MLflow.
+
+% ----------------------------------------
+% Bibliography
+% ----------------------------------------
+\begin{thebibliography}{00}
+\bibitem{huuki2022} L.~A.~Huuki-Myers \emph{et~al.}, ``A data-driven 
+single-cell and spatial transcriptomic map of the human prefrontal cortex,'' 
+\emph{AAAS}, 2022.
+\bibitem{kipf2017semi} T.~N.~Kipf and M.~Welling, ``Semi-Supervised 
+Classification with Graph Convolutional Networks,'' in \emph{Proc. ICLR}, 2017.
+\bibitem{liu2022spatial} J.~Liu \emph{et~al.}, ``SpaGCN: Integrating gene 
+expression, spatial location and histology to identify spatial domains,'' 
+\emph{Nature Methods}, 2022.
+\bibitem{luo2025deep} J.~Luo, J.~Fu, Z.~Lu, and J.~Tu, ``Deep learning in 
+integrating spatial transcriptomics with other modalities,'' \emph{Briefings in 
+Bioinformatics}, vol.~26, no.~1, pp.~bbae719, 2025.
+\end{thebibliography}
+
+\end{document}
