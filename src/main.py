@@ -34,7 +34,7 @@ def featurize_data(dataset_dir, graph_dir, tensors_dir, params_file):
         params = yaml.safe_load(parfile)['featurize']
 
     patients = dataloader.train_val_test_split(ann_data, params['seed'])
-    preprocess.prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir)
+    preprocess.prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir, params)
 
 
 def train_model(tensors_dir, params_file):
@@ -48,7 +48,9 @@ def train_model(tensors_dir, params_file):
 
     with open(params_file) as parfile:
         all_params = yaml.safe_load(parfile)
+        featurize_params = all_params['featurize']
         train_params = all_params['train']
+        train_params['pca_components'] = featurize_params['pca_components']
         tracking_params = all_params['tracking']
     train_loader, val_loader, _ = dataloader.get_dataloaders(patients, data_x, \
                                                                        edge_indices, edge_features, \

@@ -37,8 +37,8 @@ stages:
       size: 977
     - path: src/preprocess.py
       hash: md5
-      md5: c174f11fe2c359f47951fe4bf1a3b3b4
-      size: 4363
+      md5: ee5d7169ed41bbf763ffb4eb8175f708
+      size: 4393
     outs:
     - path: out/graphs
       hash: md5
@@ -49,10 +49,14 @@ stages:
     cmd: python3 src/main.py featurize --dataset_dir dataset --graph_dir 
       out/graphs --tensors_dir dataset/tensors
     deps:
+    - path: params.yaml
+      hash: md5
+      md5: 7634995c5836e422f933f478e782dd15
+      size: 329
     - path: src/dataloader.py
       hash: md5
-      md5: c59708b437c6448c481bea60f53e686d
-      size: 6685
+      md5: 16a081a7c958d7554f1b0a74f2d4e671
+      size: 6709
     - path: src/graph.py
       hash: md5
       md5: 77a13619ad9791e8b7c1ad2dc5eafa2a
@@ -63,17 +67,17 @@ stages:
       size: 977
     - path: src/main.py
       hash: md5
-      md5: a939148799e1727be8973ba11299ed81
-      size: 8885
+      md5: bffa489be979f9fbdee2efee56eba198
+      size: 9020
     - path: src/preprocess.py
       hash: md5
-      md5: c174f11fe2c359f47951fe4bf1a3b3b4
-      size: 4363
+      md5: ee5d7169ed41bbf763ffb4eb8175f708
+      size: 4393
     outs:
     - path: dataset/tensors
       hash: md5
-      md5: 75be6e5345a33e27e5de258dee95f7ba.dir
-      size: 15881378
+      md5: 03a7a3d2d54452ce7728e4096df90547.dir
+      size: 16834914
       nfiles: 6
   train:
     cmd: python3 src/main.py train --tensors_dir dataset/tensors --params_file 
@@ -81,29 +85,29 @@ stages:
     deps:
     - path: dataset/tensors
       hash: md5
-      md5: 75be6e5345a33e27e5de258dee95f7ba.dir
-      size: 15881378
+      md5: 03a7a3d2d54452ce7728e4096df90547.dir
+      size: 16834914
       nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 3047dc1cc81484f8295f630b5a617eca
-      size: 308
+      md5: 7634995c5836e422f933f478e782dd15
+      size: 329
     - path: src/dataloader.py
       hash: md5
-      md5: c59708b437c6448c481bea60f53e686d
-      size: 6685
+      md5: 16a081a7c958d7554f1b0a74f2d4e671
+      size: 6709
     - path: src/main.py
       hash: md5
-      md5: a939148799e1727be8973ba11299ed81
-      size: 8885
+      md5: bffa489be979f9fbdee2efee56eba198
+      size: 9020
     - path: src/mlflow_server.py
       hash: md5
       md5: dff011f480374bf823c68d292ec49247
       size: 856
     - path: src/model.py
       hash: md5
-      md5: a653eb8aac54ff07ef127abb34c5e30d
-      size: 2010
+      md5: d9f166c50ccfa6ccf9998ba71c6c9bb4
+      size: 2050
     - path: src/train.py
       hash: md5
       md5: 5d499e4d680b4ba3f211bddf04e6f089
@@ -120,12 +124,12 @@ stages:
     outs:
     - path: metrics.json
       hash: md5
-      md5: acdb2097e27c843d19017ccac71494ae
-      size: 35
+      md5: a76584480be0fe8f4f69297b55c87ef1
+      size: 36
     - path: models
       hash: md5
-      md5: 85f7b60bab598dc957627697b33767ba.dir
-      size: 149937
+      md5: 4e84368ef22dbe780fc16ed92bc574e7.dir
+      size: 154097
       nfiles: 1
   test:
     cmd: python3 src/main.py test --tensors_dir dataset/tensors --params_file 

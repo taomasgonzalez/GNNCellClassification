@@ -101,13 +101,13 @@ def get_normalized_color_avgs(ann_data):
 
 
 
-def get_pca_reduced(normalized_data, train_patients):
+def get_pca_reduced(normalized_data, train_patients, n_components):
     train_data = list(data for patient, data in normalized_data.items() if patient in train_patients)
     assert len(train_data) == 8
     train_stack = vstack(list(train_data))
     # svd.components_ now holds a shared basis between all the spots in the training set.
     # This basis will be freezed for using it when validating and testing.
-    svd = TruncatedSVD(n_components=50, random_state=0)
+    svd = TruncatedSVD(n_components=n_components, random_state=0)
     svd.fit(train_stack)
 
     reduced_data = {patient: svd.transform(X) for patient, X in normalized_data.items()}

@@ -29,6 +29,7 @@ stages:
     - src/dataloader.py
     - src/load_data.py
     - src/graph.py
+    - params.yaml
     outs:
     - dataset/tensors
 

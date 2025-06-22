@@ -36,7 +36,7 @@ def get_parser():
     return parser
 
 
-def prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir):
+def prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir, params):
 
     train_patients, _, _ = patients
 
@@ -57,7 +57,7 @@ def prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir):
     print("...done.\n")
 
     print("Reducing dimensionality of data.x via PCA...")
-    reduced_data = dataloader.get_pca_reduced(normalized_data, train_patients)
+    reduced_data = dataloader.get_pca_reduced(normalized_data, train_patients, params['pca_components'])
     for data in reduced_data.values():
         print(data.shape)
     print("...done.\n")
@@ -101,7 +101,7 @@ def prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir):
     torch.save(data_pos, path_join(tensors_dir, "data_pos.pt"))
     torch.save(data_y, path_join(tensors_dir, "data_y.pt"))
     torch.save(patients, path_join(tensors_dir, "patients.pt"))
-    
+
     return data_x, edge_indices, edge_features, data_pos, data_y, patients
 
 def main(data_dir, img_dir, graph_dir):
