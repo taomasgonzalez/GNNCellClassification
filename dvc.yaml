@@ -67,3 +67,4 @@ stages:
     - src/mlflow_server.py
     - src/model.py
     - src/train.py
+    frozen: true
