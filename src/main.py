@@ -9,6 +9,7 @@ import subprocess
 import torch
 import train
 import yaml
+import utils
 
 
 
@@ -33,6 +34,8 @@ def featurize_data(dataset_dir, graph_dir, tensors_dir, params_file):
     with open(params_file) as parfile:
         params = yaml.safe_load(parfile)['featurize']
 
+    utils.set_seed(params['seed'])
+
     patients = dataloader.train_val_test_split(ann_data, params['seed'])
     preprocess.prepare_and_save_tensors(ann_data, patients, graph_dir, tensors_dir, params)
 
@@ -51,7 +54,11 @@ def train_model(tensors_dir, params_file):
         featurize_params = all_params['featurize']
         train_params = all_params['train']
         train_params['pca_components'] = featurize_params['pca_components']
+        train_params['seed'] = featurize_params['seed']
         tracking_params = all_params['tracking']
+
+    utils.set_seed(train_params['seed'])
+
     train_loader, val_loader, _ = dataloader.get_dataloaders(patients, data_x, \
                                                                        edge_indices, edge_features, \
                                                                        data_pos, data_y, train_params)
@@ -97,9 +104,13 @@ def test_model(tensors_dir, params_file):
 
     with open(params_file) as parfile:
         all_params = yaml.safe_load(parfile)
-        # test params should be the same as train params
+        # some test params should be the same as train and featurize params (like seed)
+        featurize_params = all_params['featurize']
         test_params = all_params['train']
+        test_params['seed'] = featurize_params['seed']
         tracking_params = all_params['tracking']
+
+    utils.set_seed(test_params['seed'])
 
     train_loader, _, test_loader = dataloader.get_dataloaders(patients, data_x, \
                                                                        edge_indices, edge_features, \
