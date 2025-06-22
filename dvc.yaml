@@ -44,7 +44,22 @@ stages:
       - train.learning_rate
       - train.num_epochs
       - train.batch_size
+      - train.hidden1
+      - train.hidden2
+      - train.hidden3
+      - train.label_smoothing
     outs:
       - models
     metrics:
       - metrics.json
+
+  test:
+    cmd: python3 src/main.py test --tensors_dir dataset/tensors --params_file params.yaml
+    deps:
+      - src/main.py
+      - src/train.py
+      - src/model.py
+      - src/mlflow_server.py
+      - src/dataloader.py
+      - params.yaml
+      - dataset/tensors

@@ -47,15 +47,16 @@ def train_model(tensors_dir, params_file):
     patients = torch.load(path_join(tensors_dir, "patients.pt"))
 
     with open(params_file) as parfile:
-        params = yaml.safe_load(parfile)['train']
-
-    train_loader, val_loader, test_loader = dataloader.get_dataloaders(patients, data_x, \
+        all_params = yaml.safe_load(parfile)
+        train_params = all_params['train']
+        tracking_params = all_params['tracking']
+    train_loader, val_loader, _ = dataloader.get_dataloaders(patients, data_x, \
                                                                        edge_indices, edge_features, \
-                                                                       data_pos, data_y, params)
+                                                                       data_pos, data_y, train_params)
 
-    device, model = model_module.get_model(params)
+    device, model = model_module.get_model(train_params)
 
-    optimizer = model_module.get_optimizer(model, params)
+    optimizer = model_module.get_optimizer(model, train_params)
 
     # obtain class frequencies
     class_counts = torch.zeros(model.num_classes, dtype=torch.long)
@@ -65,21 +66,61 @@ def train_model(tensors_dir, params_file):
     class_freqs = class_counts.float() / total
     class_freqs = class_freqs.to(device)
 
-    criterion = model_module.get_criterion(class_freqs, params)
-    scheduler = model_module.get_scheduler(optimizer, params)
+    criterion = model_module.get_criterion(class_freqs, train_params)
+    scheduler = model_module.get_scheduler(optimizer, train_params)
 
-    port="5000"
-    artifacts_dir = "artifacts"
-    pid_file_path = "mlflow.pid"
-    log_dir="logs"
-    experiment_name = "BrainLayerClassifier"
+    port = str(tracking_params['port'])
+    artifacts_dir = tracking_params['artifacts']
+    pid_file_path = tracking_params['mlflow_pid']
+    log_dir = tracking_params['log_dir']
+    experiment_name = tracking_params['experiment_name']
 
     mlflow_server.start_mlflow_server(port=port, artifacts_dir=artifacts_dir, pid_file_path=pid_file_path)
 
     writer = train.start_tracking_experiment(exp_name=experiment_name, port=port, log_dir=log_dir)
 
-    loaders = (train_loader, val_loader)
-    train.train_loop(model, optimizer, criterion, scheduler, loaders, device, params, writer)
+    loaders = (train_loader, val_loader, None)
+    train.train_loop(model, optimizer, criterion, scheduler, loaders, device, train_params, writer)
+
+    mlflow_server.stop_mlflow_server(pid_file_path=pid_file_path)
+
+
+def test_model(tensors_dir, params_file):
+    data_x = torch.load(path_join(tensors_dir, "data_x.pt"))
+    edge_indices = torch.load(path_join(tensors_dir, "edge_indices.pt"))
+    edge_features = torch.load(path_join(tensors_dir, "edge_features.pt"))
+    data_pos = torch.load(path_join(tensors_dir, "data_pos.pt"))
+    data_y = torch.load(path_join(tensors_dir, "data_y.pt"))
+    patients = torch.load(path_join(tensors_dir, "patients.pt"))
+
+    with open(params_file) as parfile:
+        all_params = yaml.safe_load(parfile)
+        # test params should be the same as train params
+        test_params = all_params['train']
+        tracking_params = all_params['tracking']
+
+    train_loader, _, test_loader = dataloader.get_dataloaders(patients, data_x, \
+                                                                       edge_indices, edge_features, \
+                                                                       data_pos, data_y, test_params)
+    device, model = model_module.get_model(test_params)
+    class_counts = torch.zeros(model.num_classes, dtype=torch.long)
+    for batch in train_loader:
+        class_counts += torch.bincount(batch.y, minlength=model.num_classes)
+    total = class_counts.sum().item()
+    class_freqs = class_counts.float() / total
+    class_freqs = class_freqs.to(device)
+
+    criterion = model_module.get_criterion(class_freqs, test_params)
+    port = str(tracking_params['port'])
+    artifacts_dir = tracking_params['artifacts']
+    pid_file_path = tracking_params['mlflow_pid']
+    log_dir = tracking_params['log_dir']
+    experiment_name = tracking_params['experiment_name']
+
+    mlflow_server.start_mlflow_server(port=port, artifacts_dir=artifacts_dir, pid_file_path=pid_file_path)
+
+    writer = train.start_tracking_experiment(exp_name=experiment_name, port=port, log_dir=log_dir)
+    train.test(model, criterion, test_loader, device, writer)
 
     mlflow_server.stop_mlflow_server(pid_file_path=pid_file_path)
 
@@ -160,6 +201,19 @@ def main():
         help="Path to the directory containing images files"
     )
 
+    test = subparsers.add_parser("test", help="Test the model on the test set")
+    test.add_argument(
+        "--params_file", "-p",
+        type=str,
+        default=params_file_default,
+        help="Path to yaml file containing the model's hyperparameters that were used to train/define the model"
+    )
+    test.add_argument(
+        "--tensors_dir", "-t",
+        type=str,
+        default=tensors_dir_default,
+        help="Path to the directory where feature tensors will be retrieved from to create the Test Dataloader"
+    )
 
     args = parser.parse_args()
 
@@ -171,6 +225,8 @@ def main():
         featurize_data(args.dataset_dir, args.graph_dir, args.tensors_dir, args.params_file)
     if args.cmd == "train":
         train_model(args.tensors_dir, args.params_file)
+    if args.cmd == "test":
+        test_model(args.tensors_dir, args.params_file)
     else:
         parser.print_help()
 

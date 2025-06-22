@@ -63,8 +63,8 @@ stages:
       size: 977
     - path: src/main.py
       hash: md5
-      md5: dd37570d4303536e9dc7b6d0380a2e4c
-      size: 6092
+      md5: a939148799e1727be8973ba11299ed81
+      size: 8885
     - path: src/preprocess.py
       hash: md5
       md5: c174f11fe2c359f47951fe4bf1a3b3b4
@@ -86,16 +86,16 @@ stages:
       nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 954edea2d1c4cb8bb753b625fdb5394d
-      size: 177
+      md5: 3047dc1cc81484f8295f630b5a617eca
+      size: 308
     - path: src/dataloader.py
       hash: md5
       md5: c59708b437c6448c481bea60f53e686d
       size: 6685
     - path: src/main.py
       hash: md5
-      md5: dd37570d4303536e9dc7b6d0380a2e4c
-      size: 6092
+      md5: a939148799e1727be8973ba11299ed81
+      size: 8885
     - path: src/mlflow_server.py
       hash: md5
       md5: dff011f480374bf823c68d292ec49247
@@ -106,20 +106,57 @@ stages:
       size: 2010
     - path: src/train.py
       hash: md5
-      md5: ae275fde8f43b8a591c3076c80aad1d8
-      size: 4276
+      md5: 5d499e4d680b4ba3f211bddf04e6f089
+      size: 5372
     params:
       params.yaml:
         train.batch_size: 32
+        train.hidden1: 208
+        train.hidden2: 102
+        train.hidden3: 40
+        train.label_smoothing: 0.002
         train.learning_rate: 0.001
         train.num_epochs: 400
     outs:
     - path: metrics.json
       hash: md5
-      md5: c928c3ff7a8e839737fc45606ade6815
-      size: 36
+      md5: acdb2097e27c843d19017ccac71494ae
+      size: 35
     - path: models
       hash: md5
-      md5: 1ab3c21678c76d73c563c0f611d5790f.dir
+      md5: 85f7b60bab598dc957627697b33767ba.dir
       size: 149937
       nfiles: 1
+  test:
+    cmd: python3 src/main.py test --tensors_dir dataset/tensors --params_file 
+      params.yaml
+    deps:
+    - path: dataset/tensors
+      hash: md5
+      md5: 75be6e5345a33e27e5de258dee95f7ba.dir
+      size: 15881378
+      nfiles: 6
+    - path: params.yaml
+      hash: md5
+      md5: 3047dc1cc81484f8295f630b5a617eca
+      size: 308
+    - path: src/dataloader.py
+      hash: md5
+      md5: c59708b437c6448c481bea60f53e686d
+      size: 6685
+    - path: src/main.py
+      hash: md5
+      md5: a939148799e1727be8973ba11299ed81
+      size: 8885
+    - path: src/mlflow_server.py
+      hash: md5
+      md5: dff011f480374bf823c68d292ec49247
+      size: 856
+    - path: src/model.py
+      hash: md5
+      md5: a653eb8aac54ff07ef127abb34c5e30d
+      size: 2010
+    - path: src/train.py
+      hash: md5
+      md5: 5d499e4d680b4ba3f211bddf04e6f089
+      size: 5372

@@ -68,7 +68,7 @@ def validate_one_epoch(model, criterion, dataloader, device):
 
 
 def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, writer):
-    train_loader, val_loader = loaders
+    train_loader, val_loader, test_loader = loaders
     num_epochs = params["num_epochs"]
 
     os.makedirs('models', exist_ok=True)
@@ -113,3 +113,30 @@ def train_loop(model, optimizer, criterion, scheduler, loaders, device, params, 
 
             with open('metrics.json', 'w') as f:
                 json.dump(metrics, f)
+
+
+def test(model, criterion, test_loader, device, writer):
+
+    best_model_path = os.path.join("models", "model.pth")
+    model.load_state_dict(torch.load(best_model_path))
+    model.eval()
+
+    test_loss, test_metrics = validate_one_epoch(model, criterion, test_loader, device)
+
+    test_acc = test_metrics['acc_micro'].item()
+    per_class_acc = test_metrics['per_class_acc'].tolist()
+    per_class_acc = {f"acc_class_{i}": acc for i, acc in enumerate(per_class_acc)}
+    test_f1 = test_metrics['f1_micro'].item()
+    per_class_f1 = test_metrics['per_class_f1'].tolist()
+    per_class_f1 = {f"f1_class_{i}": acc for i, acc in enumerate(per_class_f1)}
+
+    print(f"Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.4f}")
+
+    writer.add_scalar('Loss/test', test_loss, 1)
+    writer.add_scalar('Accuracy/test', test_acc, 1)
+
+    mlflow.log_metric('test_loss', test_loss, step=1)
+    mlflow.log_metric('test_accuracy', test_acc, step=1)
+    mlflow.log_metric('test_f1_score', test_f1, step=1)
+    mlflow.log_metrics(per_class_acc, step=1)
+    mlflow.log_metrics(per_class_f1, step=1)

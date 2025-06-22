@@ -9,3 +9,9 @@ train:
   hidden2: 102
   hidden3: 40
   label_smoothing: 0.002
+tracking:
+  port: 5000
+  artifacts: "artifacts"
+  log_dir: logs
+  experiment_name: BrainLayerClassifier
+  mlflow_pid: "mlflow.pid"
