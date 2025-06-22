@@ -32,6 +32,10 @@ This project implements a multimodal GCN to classify brain layers in the DLPFC u
 - **Source:** [spatialDLPFC](https://github.com/LieberInstitute/spatialDLPFC) project, [Lieber Institute for Brain Development](https://www.libd.org/)
 - **Download:** The dataset includes preprocessed AnnData objects and high-resolution histology images. Download scripts are provided.
 
+### Data Exploration
+
+For researchers new to the spatialDLPFC dataset, the `DataAnalysis.ipynb` notebook provides comprehensive data exploration and comprehension analysis. This notebook demonstrates the initial data investigation, including spatial transcriptomics data structure, histological image characteristics, and the relationship between molecular and morphological features. It serves as an essential resource for understanding the dataset's composition and biological context before proceeding with the computational pipeline.
+
 ---
 
 ## Installation
