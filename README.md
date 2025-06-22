@@ -1,5 +1,7 @@
 # GNNCellClassification
 
+> **Note:** This is an ongoing project. Features, results, and documentation are subject to change.
+
 A multimodal Graph Neural Network (GCN) pipeline for automated classification of cortical layers in the human dorsolateral prefrontal cortex (DLPFC) using spatial transcriptomics and histological imaging data.
 
 ---
